@@ -182,9 +182,8 @@ export class SettingsComponent implements OnInit {
   private originalSettings: Record<string, string> = {};
 
   ngOnInit() {
-    this.api.get<AppSetting[]>('/admin/settings').subscribe((settings) => {
-      const map: Record<string, string> = {};
-      settings.forEach(s => map[s.key] = s.value);
+    this.api.get<Record<string, string>>('/admin/settings').subscribe((settings) => {
+      const map: Record<string, string> = settings ?? {};
       this.originalSettings = { ...map };
 
       this.form.maxFailedAttempts = this.num(map, 'maxFailedAttempts', 5);
@@ -228,7 +227,7 @@ export class SettingsComponent implements OnInit {
       return;
     }
 
-    this.api.patch<void>('/admin/settings', { settings: changes }).subscribe({
+    this.api.patch<void>('/admin/settings', changes).subscribe({
       next: () => {
         Object.assign(this.originalSettings, changes);
         this.snackBar.open('Configuracion guardada exitosamente', 'OK', { duration: 3000 });
