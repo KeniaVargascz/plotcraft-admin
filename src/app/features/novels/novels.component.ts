@@ -121,7 +121,7 @@ interface NovelsResponse {
           </ng-container>
           <ng-container matColumnDef="rating">
             <th mat-header-cell *matHeaderCellDef>Rating</th>
-            <td mat-cell *matCellDef="let n">{{ n.rating | number:'1.1-1' }}</td>
+            <td mat-cell *matCellDef="let n">{{ n.rating }}</td>
           </ng-container>
           <ng-container matColumnDef="chaptersCount">
             <th mat-header-cell *matHeaderCellDef>Capitulos</th>

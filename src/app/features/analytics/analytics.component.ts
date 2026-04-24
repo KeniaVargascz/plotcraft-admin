@@ -263,39 +263,57 @@ export class AnalyticsComponent implements OnInit {
       this.api.get<ContentBreakdown>('/admin/analytics/content-breakdown').toPromise(),
     ]).then(([overview, novels, authors, breakdown]) => {
       this.metricCards.set(this.buildMetricCards(overview!));
-      this.topNovels.set(novels!);
-      this.topAuthors.set(authors!);
+      this.topNovels.set((novels as any[])!.map((n: any) => ({
+        id: n.id, title: n.title,
+        authorUsername: n.author?.username ?? '',
+        views: n.viewsCount ?? 0,
+        kudos: n.kudosCount ?? 0,
+        chapters: n._count?.chapters ?? 0,
+        subscribers: n._count?.subscriptions ?? 0,
+      })));
+      this.topAuthors.set((authors as any[])!.map((a: any) => ({
+        id: a.id, username: a.username,
+        novelsCount: a._count?.novels ?? 0,
+        followersCount: a._count?.followers ?? 0,
+        postsCount: a._count?.posts ?? 0,
+      })));
       this.breakdown.set(breakdown!);
       this.loading.set(false);
       setTimeout(() => this.renderCharts(breakdown!), 0);
     });
   }
 
-  private buildMetricCards(o: MetricOverview): MetricCard[] {
-    const calc = (label: string, current: number, previous: number): MetricCard => ({
+  private buildMetricCards(o: any): MetricCard[] {
+    const m = o.metrics ?? o;
+    const build = (label: string, data: any): MetricCard => ({
       label,
-      value: current,
-      previous,
-      delta: previous > 0 ? (current - previous) / previous : 0,
+      value: data?.current ?? 0,
+      previous: data?.previous ?? 0,
+      delta: data?.delta ?? 0,
     });
     return [
-      calc('Usuarios', o.totalUsers, o.previousUsers),
-      calc('Novelas', o.totalNovels, o.previousNovels),
-      calc('Capitulos', o.totalChapters, o.previousChapters),
-      calc('Posts', o.totalPosts, o.previousPosts),
-      calc('Comunidades', o.totalCommunities, o.previousCommunities),
-      calc('Hilos del Foro', o.totalThreads, o.previousThreads),
+      build('Nuevos Usuarios', m.newUsers),
+      build('Nuevas Novelas', m.newNovels),
+      build('Nuevos Capitulos', m.newChapters),
+      build('Nuevos Posts', m.newPosts),
     ];
   }
 
-  private renderCharts(b: ContentBreakdown) {
+  private renderCharts(b: any) {
     this.charts.forEach(c => c.destroy());
     this.charts = [];
 
-    this.charts.push(this.createDoughnut(this.statusChartRef, b.novelsByStatus));
-    this.charts.push(this.createDoughnut(this.ratingChartRef, b.novelsByRating));
-    this.charts.push(this.createDoughnut(this.typeChartRef, b.novelsByType));
-    this.charts.push(this.createDoughnut(this.categoryChartRef, b.threadsByCategory));
+    const toRecord = (arr: any[], keyField: string) => {
+      if (!Array.isArray(arr)) return arr ?? {};
+      const map: Record<string, number> = {};
+      for (const item of arr) map[item[keyField] ?? 'unknown'] = item.count ?? 0;
+      return map;
+    };
+
+    this.charts.push(this.createDoughnut(this.statusChartRef, toRecord(b.novelsByStatus, 'status')));
+    this.charts.push(this.createDoughnut(this.ratingChartRef, toRecord(b.novelsByRating, 'rating')));
+    this.charts.push(this.createDoughnut(this.typeChartRef, toRecord(b.novelsByType, 'type')));
+    this.charts.push(this.createDoughnut(this.categoryChartRef, toRecord(b.threadsByCategory, 'category')));
   }
 
   private createDoughnut(ref: ElementRef<HTMLCanvasElement>, data: Record<string, number>): Chart {
