@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
@@ -46,7 +46,7 @@ interface NovelsResponse {
   selector: 'app-novels',
   standalone: true,
   imports: [
-    DatePipe, DecimalPipe, FormsModule,
+    DatePipe, FormsModule,
     MatTableModule, MatPaginatorModule, MatProgressSpinnerModule,
     MatChipsModule, MatIconModule, MatButtonModule,
     MatInputModule, MatFormFieldModule, MatMenuModule,

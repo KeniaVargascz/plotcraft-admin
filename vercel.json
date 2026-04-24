@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npx ng build --configuration=production",
+  "outputDirectory": "dist/plotcraft-admin/browser",
+  "installCommand": "npm install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
