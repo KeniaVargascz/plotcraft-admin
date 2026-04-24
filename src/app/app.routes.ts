@@ -59,6 +59,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/posts/posts.component').then((m) => m.PostsComponent),
       },
+      {
+        path: 'analytics',
+        loadComponent: () =>
+          import('./features/analytics/analytics.component').then((m) => m.AnalyticsComponent),
+      },
+      {
+        path: 'settings',
+        loadComponent: () =>
+          import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
