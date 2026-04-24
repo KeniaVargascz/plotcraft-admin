@@ -165,7 +165,13 @@ export class CatalogsComponent implements OnInit {
     this.loading.set(true);
     this.api.get<CatalogItem[]>(`/admin/catalogs/${catalog}`).subscribe({
       next: (data) => {
-        this.items.set(data);
+        // Normalize languages (name/code) to match label/slug interface
+        const normalized = data.map((item: any) => ({
+          ...item,
+          label: item.label ?? item.name ?? '',
+          slug: item.slug ?? item.code ?? '',
+        }));
+        this.items.set(normalized);
         this.loading.set(false);
       },
       error: () => {
@@ -182,7 +188,8 @@ export class CatalogsComponent implements OnInit {
       this.snackBar.open('Nombre y slug son requeridos', 'OK', { duration: 2000 });
       return;
     }
-    this.api.post(`/admin/catalogs/${catalog}`, { label, slug }).subscribe({
+    const body = catalog === 'languages' ? { name: label, code: slug } : { label, slug };
+    this.api.post(`/admin/catalogs/${catalog}`, body).subscribe({
       next: () => {
         this.snackBar.open('Elemento agregado', 'OK', { duration: 2000 });
         this.newLabel.set('');
@@ -210,7 +217,8 @@ export class CatalogsComponent implements OnInit {
       this.snackBar.open('Nombre y slug son requeridos', 'OK', { duration: 2000 });
       return;
     }
-    this.api.patch(`/admin/catalogs/${catalog}/${item.id}`, { label, slug }).subscribe({
+    const body = catalog === 'languages' ? { name: label, code: slug } : { label, slug };
+    this.api.patch(`/admin/catalogs/${catalog}/${item.id}`, body).subscribe({
       next: () => {
         this.snackBar.open('Elemento actualizado', 'OK', { duration: 2000 });
         this.editingId.set(null);
