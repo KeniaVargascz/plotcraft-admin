@@ -1,9 +1,20 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, AfterViewInit, inject, signal, ElementRef, ViewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { HttpApiService } from '../../core/services/http-api.service';
+import { Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
+
+interface GrowthPoint {
+  date: string;
+  users: number;
+  novels: number;
+  chapters: number;
+  posts: number;
+}
 
 interface Stats {
   users: number;
@@ -62,6 +73,14 @@ interface Activity {
     .activity-value { font-size: 1.5rem; font-weight: 700; color: #c9a84c; }
     .activity-label { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
     .loading { display: grid; place-items: center; padding: 4rem; }
+    .chart-section { margin-top: 2rem; }
+    .chart-container {
+      background: #fff;
+      border: 1px solid #e8e8ec;
+      border-radius: 1rem;
+      padding: 1.25rem;
+    }
+    canvas { width: 100% !important; max-height: 320px; }
   `],
   template: `
     <h1>Dashboard</h1>
@@ -85,10 +104,17 @@ interface Activity {
           </div>
         }
       </div>
+      <div class="chart-section">
+        <h2>Crecimiento (ultimos 30 dias)</h2>
+        <div class="chart-container">
+          <canvas #growthCanvas></canvas>
+        </div>
+      </div>
     }
   `,
 })
 export class DashboardComponent implements OnInit {
+  @ViewChild('growthCanvas') growthCanvas!: ElementRef<HTMLCanvasElement>;
   private readonly api = inject(HttpApiService);
   loading = signal(true);
   metrics = signal<{ label: string; value: number }[]>([]);
@@ -117,6 +143,70 @@ export class DashboardComponent implements OnInit {
         { label: 'Nuevas comunidades', value: activity!.newCommunities },
       ]);
       this.loading.set(false);
+      // Load growth chart after view renders
+      setTimeout(() => this.loadGrowthChart(), 0);
+    });
+  }
+
+  private loadGrowthChart() {
+    this.api.get<GrowthPoint[]>('/admin/dashboard/growth', { days: '30' }).subscribe((data) => {
+      if (!this.growthCanvas) return;
+      const ctx = this.growthCanvas.nativeElement.getContext('2d');
+      if (!ctx) return;
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map((d) => {
+            const date = new Date(d.date);
+            return `${date.getDate()}/${date.getMonth() + 1}`;
+          }),
+          datasets: [
+            {
+              label: 'Usuarios',
+              data: data.map((d) => d.users),
+              borderColor: '#c9a84c',
+              backgroundColor: 'rgba(201,168,76,0.1)',
+              tension: 0.3,
+              fill: false,
+            },
+            {
+              label: 'Novelas',
+              data: data.map((d) => d.novels),
+              borderColor: '#4c8bc9',
+              backgroundColor: 'rgba(76,139,201,0.1)',
+              tension: 0.3,
+              fill: false,
+            },
+            {
+              label: 'Capitulos',
+              data: data.map((d) => d.chapters),
+              borderColor: '#4cc98b',
+              backgroundColor: 'rgba(76,201,139,0.1)',
+              tension: 0.3,
+              fill: false,
+            },
+            {
+              label: 'Posts',
+              data: data.map((d) => d.posts),
+              borderColor: '#c94c7a',
+              backgroundColor: 'rgba(201,76,122,0.1)',
+              tension: 0.3,
+              fill: false,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top' },
+          },
+          scales: {
+            x: { title: { display: true, text: 'Fecha' } },
+            y: { title: { display: true, text: 'Cantidad' }, beginAtZero: true },
+          },
+        },
+      });
     });
   }
 }

@@ -29,6 +29,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/audit-logs/audit-logs.component').then((m) => m.AuditLogsComponent),
       },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./features/users/users.component').then((m) => m.UsersComponent),
+      },
+      {
+        path: 'communities',
+        loadComponent: () =>
+          import('./features/communities/communities.component').then((m) => m.CommunitiesComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

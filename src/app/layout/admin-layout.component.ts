@@ -71,6 +71,12 @@ import { AuthService } from '../core/services/auth.service';
           <a class="nav-item" routerLink="/audit-logs" routerLinkActive="active">
             <mat-icon>history</mat-icon> Audit Logs
           </a>
+          <a class="nav-item" routerLink="/users" routerLinkActive="active">
+            <mat-icon>people</mat-icon> Usuarios
+          </a>
+          <a class="nav-item" routerLink="/communities" routerLinkActive="active">
+            <mat-icon>groups</mat-icon> Comunidades
+          </a>
         </nav>
       </aside>
       <div class="main">
