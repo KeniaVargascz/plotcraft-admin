@@ -39,6 +39,26 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/communities/communities.component').then((m) => m.CommunitiesComponent),
       },
+      {
+        path: 'novels',
+        loadComponent: () =>
+          import('./features/novels/novels.component').then((m) => m.NovelsComponent),
+      },
+      {
+        path: 'forum',
+        loadComponent: () =>
+          import('./features/forum/forum.component').then((m) => m.ForumComponent),
+      },
+      {
+        path: 'catalogs',
+        loadComponent: () =>
+          import('./features/catalogs/catalogs.component').then((m) => m.CatalogsComponent),
+      },
+      {
+        path: 'posts',
+        loadComponent: () =>
+          import('./features/posts/posts.component').then((m) => m.PostsComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -77,6 +77,18 @@ import { AuthService } from '../core/services/auth.service';
           <a class="nav-item" routerLink="/communities" routerLinkActive="active">
             <mat-icon>groups</mat-icon> Comunidades
           </a>
+          <a class="nav-item" routerLink="/novels" routerLinkActive="active">
+            <mat-icon>menu_book</mat-icon> Novelas
+          </a>
+          <a class="nav-item" routerLink="/forum" routerLinkActive="active">
+            <mat-icon>forum</mat-icon> Foro
+          </a>
+          <a class="nav-item" routerLink="/catalogs" routerLinkActive="active">
+            <mat-icon>category</mat-icon> Catalogos
+          </a>
+          <a class="nav-item" routerLink="/posts" routerLinkActive="active">
+            <mat-icon>article</mat-icon> Posts
+          </a>
         </nav>
       </aside>
       <div class="main">
