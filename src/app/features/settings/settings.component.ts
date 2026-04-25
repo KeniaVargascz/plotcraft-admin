@@ -194,9 +194,15 @@ export class SettingsComponent implements OnInit {
       this.form.defaultLimit = this.num(map, 'defaultLimit', 20);
       this.form.maxLimit = this.num(map, 'maxLimit', 100);
       this.form.maintenanceMode = this.bool(map, 'maintenanceMode', false);
-      this.form.registrationEnabled = this.bool(map, 'registrationEnabled', true);
 
-      this.loading.set(false);
+      // Read registration state from the feature flag (source of truth)
+      this.api.get<{ groups: Record<string, { key: string; enabled: boolean }[]> }>('/admin/features').subscribe((flags) => {
+        const all = Object.values(flags.groups).flat();
+        const reg = all.find(f => f.key === 'platform.registration');
+        this.form.registrationEnabled = reg?.enabled ?? true;
+        this.originalSettings['registrationEnabled'] = String(this.form.registrationEnabled);
+        this.loading.set(false);
+      });
     });
   }
 
@@ -227,9 +233,17 @@ export class SettingsComponent implements OnInit {
       return;
     }
 
+    // Sync registrationEnabled with the platform.registration feature flag
+    const flagSync$ = changes['registrationEnabled'] != null
+      ? this.api.patch('/admin/features/platform.registration', { enabled: changes['registrationEnabled'] === 'true' })
+      : null;
+
     this.api.patch<void>('/admin/settings', changes).subscribe({
       next: () => {
         Object.assign(this.originalSettings, changes);
+        if (flagSync$) {
+          flagSync$.subscribe();
+        }
         this.snackBar.open('Configuracion guardada exitosamente', 'OK', { duration: 3000 });
         this.saving.set(false);
       },
