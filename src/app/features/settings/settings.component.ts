@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { forkJoin, of } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -208,8 +209,8 @@ export class SettingsComponent implements OnInit {
 
   save() {
     this.saving.set(true);
-    const changes: Record<string, string> = {};
-    const current: Record<string, string> = {
+
+    const settingsPayload: Record<string, string> = {
       maxFailedAttempts: String(this.form.maxFailedAttempts),
       accessTokenTtl: String(this.form.accessTokenTtl),
       refreshTokenTtl: String(this.form.refreshTokenTtl),
@@ -221,34 +222,16 @@ export class SettingsComponent implements OnInit {
       registrationEnabled: String(this.form.registrationEnabled),
     };
 
-    for (const [key, value] of Object.entries(current)) {
-      if (this.originalSettings[key] !== value) {
-        changes[key] = value;
-      }
-    }
-
-    if (Object.keys(changes).length === 0) {
-      this.snackBar.open('No hay cambios para guardar', 'OK', { duration: 3000 });
-      this.saving.set(false);
-      return;
-    }
-
-    // Sync registrationEnabled with the platform.registration feature flag
-    const flagSync$ = changes['registrationEnabled'] != null
-      ? this.api.patch('/admin/features/platform.registration', { enabled: changes['registrationEnabled'] === 'true' })
-      : null;
-
-    this.api.patch<void>('/admin/settings', changes).subscribe({
+    forkJoin([
+      this.api.patch<void>('/admin/settings', settingsPayload),
+      this.api.patch<void>('/admin/features/platform.registration', { enabled: this.form.registrationEnabled }),
+    ]).subscribe({
       next: () => {
-        Object.assign(this.originalSettings, changes);
-        if (flagSync$) {
-          flagSync$.subscribe();
-        }
-        this.snackBar.open('Configuracion guardada exitosamente', 'OK', { duration: 3000 });
+        this.snackBar.open('Configuracion guardada', 'OK', { duration: 3000 });
         this.saving.set(false);
       },
       error: () => {
-        this.snackBar.open('Error al guardar la configuracion', 'OK', { duration: 3000 });
+        this.snackBar.open('Error al guardar', 'OK', { duration: 3000 });
         this.saving.set(false);
       },
     });
