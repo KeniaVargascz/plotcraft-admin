@@ -26,6 +26,8 @@ interface SettingsForm {
   maxLimit: number;
   maintenanceMode: boolean;
   registrationEnabled: boolean;
+  bannerEnabled: boolean;
+  bannerHtml: string;
 }
 
 @Component({
@@ -68,6 +70,16 @@ interface SettingsForm {
     .actions { display: flex; gap: 1rem; margin-top: 1rem; }
     .save-btn { background-color: #c9a84c !important; color: #fff !important; }
     .loading { display: grid; place-items: center; padding: 4rem; }
+    .banner-textarea { width: 100%; min-height: 120px; font-family: monospace; font-size: 0.85rem; }
+    .banner-preview {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      border: 1px dashed #c9a84c;
+      border-radius: 0.5rem;
+      background: #fffdf5;
+      font-size: 0.88rem;
+    }
+    .preview-label { font-size: 0.75rem; color: #888; margin-bottom: 0.25rem; }
   `],
   template: `
     <h1>Configuracion de la Plataforma</h1>
@@ -147,6 +159,27 @@ interface SettingsForm {
             </div>
           </mat-card-content>
         </mat-card>
+        <!-- Banner Section -->
+        <mat-card class="section-card">
+          <mat-card-content>
+            <div class="section-title"><mat-icon>campaign</mat-icon> Banner Informativo</div>
+            <div class="fields">
+              <div class="toggle-row">
+                <span class="toggle-label">Banner activo</span>
+                <mat-slide-toggle [(ngModel)]="form.bannerEnabled" />
+              </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Contenido HTML</mat-label>
+                <textarea matInput class="banner-textarea" [(ngModel)]="form.bannerHtml"
+                  placeholder='Ej: <b>Mantenimiento programado</b> el viernes 25 de abril.'></textarea>
+              </mat-form-field>
+              @if (form.bannerHtml) {
+                <div class="preview-label">Vista previa:</div>
+                <div class="banner-preview" [innerHTML]="form.bannerHtml"></div>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
       </div>
 
       <div class="actions">
@@ -178,6 +211,8 @@ export class SettingsComponent implements OnInit {
     maxLimit: 100,
     maintenanceMode: false,
     registrationEnabled: true,
+    bannerEnabled: false,
+    bannerHtml: '',
   };
 
   private originalSettings: Record<string, string> = {};
@@ -195,6 +230,8 @@ export class SettingsComponent implements OnInit {
       this.form.defaultLimit = this.num(map, 'defaultLimit', 20);
       this.form.maxLimit = this.num(map, 'maxLimit', 100);
       this.form.maintenanceMode = this.bool(map, 'maintenanceMode', false);
+      this.form.bannerEnabled = this.bool(map, 'banner.enabled', false);
+      this.form.bannerHtml = map['banner.html'] ?? '';
 
       // Read registration state from the feature flag (source of truth)
       this.api.get<{ groups: Record<string, { key: string; enabled: boolean }[]> }>('/admin/features').subscribe((flags) => {
@@ -220,6 +257,8 @@ export class SettingsComponent implements OnInit {
       maxLimit: String(this.form.maxLimit),
       maintenanceMode: String(this.form.maintenanceMode),
       registrationEnabled: String(this.form.registrationEnabled),
+      'banner.enabled': String(this.form.bannerEnabled),
+      'banner.html': this.form.bannerHtml,
     };
 
     forkJoin([
