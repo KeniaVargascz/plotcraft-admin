@@ -120,12 +120,14 @@ export class FeatureFlagsComponent implements OnInit {
   }
 
   toggleFlag(flag: FeatureFlag, enabled: boolean) {
-    flag.enabled = enabled;
     this.api.patch(`/admin/features/${flag.key}`, { enabled }).subscribe({
-      next: () => this.snackBar.open(`${flag.label}: ${enabled ? 'habilitado' : 'deshabilitado'}`, 'OK', { duration: 2000 }),
+      next: () => {
+        this.loadFlags();
+        this.snackBar.open(`${flag.label}: ${enabled ? 'habilitado' : 'deshabilitado'}`, 'OK', { duration: 2000 });
+      },
       error: () => {
-        flag.enabled = !enabled;
-        this.snackBar.open('Error al actualizar', 'OK', { duration: 3000 });
+        this.loadFlags();
+        this.snackBar.open('Error al actualizar — reintenta', 'OK', { duration: 3000 });
       },
     });
   }
