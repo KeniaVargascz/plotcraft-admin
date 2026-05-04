@@ -1,8 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, tap, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 interface AdminUser {
@@ -10,6 +9,8 @@ interface AdminUser {
   email: string;
   username: string;
   isAdmin: boolean;
+  role?: number;
+  tfaEnabled?: boolean;
   profile?: { displayName: string; avatarUrl: string | null };
 }
 
@@ -17,6 +18,11 @@ interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   user: AdminUser;
+}
+
+interface TfaRequiredResponse {
+  tfaRequired: true;
+  tfaToken: string;
 }
 
 interface ApiResponse<T> {
@@ -46,9 +52,47 @@ export class AuthService {
     }
   }
 
-  login(email: string, password: string): Observable<LoginResponse> {
+  login(email: string, password: string): Observable<LoginResponse | TfaRequiredResponse> {
     return this.http
-      .post<ApiResponse<LoginResponse>>(`${environment.apiUrl}/admin/auth/login`, { email, password })
+      .post<ApiResponse<LoginResponse | TfaRequiredResponse>>(
+        `${environment.apiUrl}/admin/auth/login`,
+        { email, password },
+      )
+      .pipe(
+        map((r) => r.data),
+        tap((res) => {
+          if (!('tfaRequired' in res)) {
+            const loginRes = res as LoginResponse;
+            localStorage.setItem(this.TOKEN_KEY, loginRes.accessToken);
+            localStorage.setItem(this.REFRESH_KEY, loginRes.refreshToken);
+            this.currentUser.set(loginRes.user);
+          }
+        }),
+      );
+  }
+
+  verifyTfa(tfaToken: string, code: string): Observable<LoginResponse> {
+    return this.http
+      .post<ApiResponse<LoginResponse>>(
+        `${environment.apiUrl}/admin/auth/tfa/verify`,
+        { tfaToken, code },
+      )
+      .pipe(
+        map((r) => r.data),
+        tap((res) => {
+          localStorage.setItem(this.TOKEN_KEY, res.accessToken);
+          localStorage.setItem(this.REFRESH_KEY, res.refreshToken);
+          this.currentUser.set(res.user);
+        }),
+      );
+  }
+
+  setupAndEnable(tfaToken: string, code: string, phone: string): Observable<LoginResponse> {
+    return this.http
+      .post<ApiResponse<LoginResponse>>(
+        `${environment.apiUrl}/admin/auth/tfa/setup-and-enable`,
+        { tfaToken, code, phone },
+      )
       .pipe(
         map((r) => r.data),
         tap((res) => {

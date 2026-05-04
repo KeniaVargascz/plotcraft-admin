@@ -30,7 +30,20 @@ import { AuthService } from '../core/services/auth.service';
       color: #c9a84c;
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    .nav-list { flex: 1; padding: 0.5rem 0; }
+    .nav-list {
+      flex: 1;
+      padding: 0.5rem 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201,168,76,0.3) transparent;
+    }
+    .nav-list::-webkit-scrollbar { width: 4px; }
+    .nav-list::-webkit-scrollbar-track { background: transparent; }
+    .nav-list::-webkit-scrollbar-thumb {
+      background: rgba(201,168,76,0.3);
+      border-radius: 4px;
+    }
+    .nav-list::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.5); }
     .nav-item {
       display: flex;
       align-items: center;
@@ -91,6 +104,9 @@ import { AuthService } from '../core/services/auth.service';
           </a>
           <a class="nav-item" routerLink="/analytics" routerLinkActive="active">
             <mat-icon>analytics</mat-icon> Analytics
+          </a>
+          <a class="nav-item" routerLink="/cleanup" routerLinkActive="active">
+            <mat-icon>delete_sweep</mat-icon> Limpieza
           </a>
           <a class="nav-item" routerLink="/settings" routerLinkActive="active">
             <mat-icon>settings</mat-icon> Configuracion

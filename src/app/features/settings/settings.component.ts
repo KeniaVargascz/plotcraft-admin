@@ -70,6 +70,24 @@ interface SettingsForm {
     .actions { display: flex; gap: 1rem; margin-top: 1rem; }
     .save-btn { background-color: #c9a84c !important; color: #fff !important; }
     .loading { display: grid; place-items: center; padding: 4rem; }
+    .tfa-section { margin-bottom: 2rem; }
+    .tfa-card { border-radius: 1rem !important; max-width: 500px; }
+    .tfa-status {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.9rem; margin-bottom: 1rem;
+    }
+    .tfa-status.enabled { color: #2e7d32; }
+    .tfa-status.disabled { color: #888; }
+    .qr-container { text-align: center; margin: 1rem 0; }
+    .qr-container img { max-width: 200px; border-radius: 0.5rem; }
+    .secret-code {
+      font-family: monospace; font-size: 0.85rem; background: #f5f5f5;
+      padding: 0.5rem 1rem; border-radius: 0.5rem; text-align: center;
+      word-break: break-all; margin: 0.75rem 0;
+    }
+    .tfa-form { display: flex; gap: 0.75rem; align-items: flex-start; }
+    .tfa-form mat-form-field { flex: 1; }
+    .tfa-btn { height: 56px !important; }
     .banner-textarea { width: 100%; min-height: 120px; font-family: monospace; font-size: 0.85rem; }
     .banner-preview {
       margin-top: 0.75rem;
@@ -182,6 +200,104 @@ interface SettingsForm {
         </mat-card>
       </div>
 
+      <!-- Change Password Section -->
+      <div class="tfa-section">
+        <mat-card class="tfa-card">
+          <mat-card-content>
+            <div class="section-title"><mat-icon>lock</mat-icon> Cambiar contrasena</div>
+            <div class="fields">
+              <mat-form-field appearance="outline">
+                <mat-label>Contrasena actual</mat-label>
+                <input matInput type="password" [(ngModel)]="changeForm.currentPassword" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Nueva contrasena</mat-label>
+                <input matInput type="password" [(ngModel)]="changeForm.newPassword" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Codigo 2FA</mat-label>
+                <input matInput [(ngModel)]="changeForm.tfaCode" maxlength="6" />
+              </mat-form-field>
+              <button mat-flat-button class="save-btn" (click)="changePassword()" [disabled]="changeSaving()">
+                @if (changeSaving()) { <mat-spinner diameter="20" /> } @else { Cambiar contrasena }
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Phone Section -->
+      <div class="tfa-section">
+        <mat-card class="tfa-card">
+          <mat-card-content>
+            <div class="section-title"><mat-icon>phone</mat-icon> Telefono (para recuperar contrasena)</div>
+            <div class="tfa-form">
+              <mat-form-field appearance="outline">
+                <mat-label>Numero de telefono</mat-label>
+                <input matInput [ngModel]="phoneNumber()" (ngModelChange)="phoneNumber.set($event)" placeholder="+521234567890" />
+              </mat-form-field>
+            </div>
+            <div class="tfa-form">
+              <mat-form-field appearance="outline">
+                <mat-label>Codigo 2FA para confirmar</mat-label>
+                <input matInput [(ngModel)]="phoneTfaCode" maxlength="6" />
+              </mat-form-field>
+              <button mat-flat-button class="save-btn tfa-btn" (click)="updatePhone()" [disabled]="phoneSaving()">
+                Guardar
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- 2FA Section -->
+      <div class="tfa-section">
+        <mat-card class="tfa-card">
+          <mat-card-content>
+            <div class="section-title"><mat-icon>security</mat-icon> Autenticacion de dos factores (2FA)</div>
+
+            <div class="tfa-status" [class.enabled]="tfaEnabled()" [class.disabled]="!tfaEnabled()">
+              <mat-icon>{{ tfaEnabled() ? 'verified_user' : 'shield' }}</mat-icon>
+              {{ tfaEnabled() ? '2FA activado' : '2FA desactivado' }}
+            </div>
+
+            @if (!tfaEnabled()) {
+              @if (!tfaSetupData()) {
+                <button mat-stroked-button (click)="startTfaSetup()">
+                  <mat-icon>qr_code_2</mat-icon> Configurar 2FA
+                </button>
+              } @else {
+                <p style="font-size:0.85rem;color:#666;margin-bottom:0.75rem">
+                  Escanea el codigo QR con tu app de autenticacion (Google Authenticator, Authy, etc.)
+                </p>
+                <div class="qr-container">
+                  <img [src]="tfaSetupData()!.qrDataUrl" alt="QR Code" />
+                </div>
+                <div class="tfa-form">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Codigo de verificacion</mat-label>
+                    <input matInput [(ngModel)]="tfaVerifyCode" maxlength="6" />
+                  </mat-form-field>
+                  <button mat-flat-button class="save-btn tfa-btn" (click)="enableTfa()" [disabled]="tfaSaving()">
+                    Activar
+                  </button>
+                </div>
+              }
+            } @else {
+              <div class="tfa-form">
+                <mat-form-field appearance="outline">
+                  <mat-label>Codigo para desactivar</mat-label>
+                  <input matInput [(ngModel)]="tfaDisableCode" maxlength="6" />
+                </mat-form-field>
+                <button mat-stroked-button color="warn" class="tfa-btn" (click)="disableTfa()" [disabled]="tfaSaving()">
+                  Desactivar 2FA
+                </button>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+
       <div class="actions">
         <button mat-raised-button class="save-btn" (click)="save()" [disabled]="saving()">
           @if (saving()) {
@@ -218,6 +334,8 @@ export class SettingsComponent implements OnInit {
   private originalSettings: Record<string, string> = {};
 
   ngOnInit() {
+    this.loadTfaStatus();
+    this.loadPhone();
     this.api.get<Record<string, string>>('/admin/settings').subscribe((settings) => {
       const map: Record<string, string> = settings ?? {};
       this.originalSettings = { ...map };
@@ -282,5 +400,106 @@ export class SettingsComponent implements OnInit {
 
   private bool(map: Record<string, string>, key: string, fallback: boolean): boolean {
     return map[key] != null ? map[key] === 'true' : fallback;
+  }
+
+  // Change password
+  changeForm = { currentPassword: '', newPassword: '', tfaCode: '' };
+  changeSaving = signal(false);
+
+  changePassword() {
+    this.changeSaving.set(true);
+    this.api.post<{ message: string }>('/admin/auth/change-password', this.changeForm).subscribe({
+      next: () => {
+        this.changeSaving.set(false);
+        this.changeForm = { currentPassword: '', newPassword: '', tfaCode: '' };
+        this.snackBar.open('Contrasena actualizada', 'OK', { duration: 3000 });
+      },
+      error: (err) => {
+        this.changeSaving.set(false);
+        this.snackBar.open(err?.error?.error?.message || 'Error al cambiar contrasena', 'OK', { duration: 3000 });
+      },
+    });
+  }
+
+  // Phone
+  phoneNumber = signal('');
+  phoneTfaCode = '';
+  phoneSaving = signal(false);
+
+  private loadPhone() {
+    this.api.get<{ phone?: string | null }>('/admin/auth/me').subscribe({
+      next: (user) => this.phoneNumber.set((user as any).phone ?? ''),
+    });
+  }
+
+  updatePhone() {
+    this.phoneSaving.set(true);
+    this.api.post<{ message: string }>('/admin/auth/update-phone', {
+      phone: this.phoneNumber(),
+      tfaCode: this.phoneTfaCode,
+    }).subscribe({
+      next: () => {
+        this.phoneSaving.set(false);
+        this.phoneTfaCode = '';
+        this.snackBar.open('Telefono actualizado', 'OK', { duration: 3000 });
+      },
+      error: (err) => {
+        this.phoneSaving.set(false);
+        this.snackBar.open(err?.error?.error?.message || 'Error', 'OK', { duration: 3000 });
+      },
+    });
+  }
+
+  // 2FA
+  tfaEnabled = signal(false);
+  tfaSetupData = signal<{ qrDataUrl: string } | null>(null);
+  tfaSaving = signal(false);
+  tfaVerifyCode = '';
+  tfaDisableCode = '';
+
+  private loadTfaStatus() {
+    this.api.get<{ tfaEnabled?: boolean }>('/admin/auth/me').subscribe({
+      next: (user) => this.tfaEnabled.set(user.tfaEnabled ?? false),
+    });
+  }
+
+  startTfaSetup() {
+    this.api.post<{ qrDataUrl: string }>('/admin/auth/tfa/setup').subscribe({
+      next: (data) => this.tfaSetupData.set(data),
+      error: () => this.snackBar.open('Error al generar QR', 'OK', { duration: 3000 }),
+    });
+  }
+
+  enableTfa() {
+    this.tfaSaving.set(true);
+    this.api.post<{ enabled: boolean }>('/admin/auth/tfa/enable', { code: this.tfaVerifyCode }).subscribe({
+      next: () => {
+        this.tfaEnabled.set(true);
+        this.tfaSetupData.set(null);
+        this.tfaVerifyCode = '';
+        this.tfaSaving.set(false);
+        this.snackBar.open('2FA activado correctamente', 'OK', { duration: 3000 });
+      },
+      error: (err) => {
+        this.tfaSaving.set(false);
+        this.snackBar.open(err?.error?.error?.message || 'Codigo invalido', 'OK', { duration: 3000 });
+      },
+    });
+  }
+
+  disableTfa() {
+    this.tfaSaving.set(true);
+    this.api.post<{ enabled: boolean }>('/admin/auth/tfa/disable', { code: this.tfaDisableCode }).subscribe({
+      next: () => {
+        this.tfaEnabled.set(false);
+        this.tfaDisableCode = '';
+        this.tfaSaving.set(false);
+        this.snackBar.open('2FA desactivado', 'OK', { duration: 3000 });
+      },
+      error: (err) => {
+        this.tfaSaving.set(false);
+        this.snackBar.open(err?.error?.error?.message || 'Codigo invalido', 'OK', { duration: 3000 });
+      },
+    });
   }
 }

@@ -69,6 +69,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/settings/settings.component').then((m) => m.SettingsComponent),
       },
+      {
+        path: 'cleanup',
+        loadComponent: () =>
+          import('./features/cleanup/cleanup.component').then((m) => m.CleanupComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
