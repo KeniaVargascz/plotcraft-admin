@@ -18,18 +18,24 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
   standalone: true,
   imports: [FormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule],
   styles: [`
-    :host {
-      // Scope dark Material overrides to login only
-      --mdc-outlined-text-field-outline-color: var(--login-border);
-      --mdc-outlined-text-field-hover-outline-color: var(--login-border-hover);
-      --mdc-outlined-text-field-focus-outline-color: var(--admin-accent);
-      --mdc-outlined-text-field-label-text-color: var(--login-text-secondary);
-      --mdc-outlined-text-field-focus-label-text-color: var(--admin-accent);
-      --mdc-outlined-text-field-input-text-color: var(--login-text);
-      --mdc-outlined-text-field-caret-color: var(--admin-accent);
-      --mat-select-trigger-text-color: var(--login-text);
-      --mat-select-enabled-arrow-color: var(--login-text-secondary);
-      --mat-option-label-text-color: var(--admin-text);
+    // Force Material dark overrides scoped to login
+    :host ::ng-deep .login-shell {
+      .mat-mdc-form-field {
+        --mdc-outlined-text-field-outline-color: rgba(255,255,255,0.15);
+        --mdc-outlined-text-field-hover-outline-color: rgba(255,255,255,0.3);
+        --mdc-outlined-text-field-focus-outline-color: #c9a84c;
+        --mdc-outlined-text-field-label-text-color: rgba(255,255,255,0.55);
+        --mdc-outlined-text-field-focus-label-text-color: #c9a84c;
+        --mdc-outlined-text-field-input-text-color: #e8e8f0;
+        --mdc-outlined-text-field-caret-color: #c9a84c;
+      }
+      .mat-mdc-select {
+        --mat-select-trigger-text-color: #e8e8f0;
+        --mat-select-enabled-arrow-color: rgba(255,255,255,0.55);
+      }
+      .mat-mdc-icon-button {
+        --mdc-icon-button-icon-color: rgba(255,255,255,0.55);
+      }
     }
 
     .login-shell {
