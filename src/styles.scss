@@ -22,12 +22,25 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-// Material overrides for admin dark login
-.mat-mdc-form-field {
-  --mdc-outlined-text-field-outline-color: rgba(255,255,255,0.15);
-  --mdc-outlined-text-field-hover-outline-color: rgba(255,255,255,0.3);
-  --mdc-outlined-text-field-focus-outline-color: #c9a84c;
-  --mdc-outlined-text-field-label-text-color: rgba(255,255,255,0.5);
-  --mdc-outlined-text-field-input-text-color: #fff;
-  --mdc-outlined-text-field-caret-color: #c9a84c;
+// Theme tokens used across admin app
+:root {
+  --admin-accent: #c9a84c;
+  --admin-accent-hover: #d4b85c;
+  --admin-accent-bg: rgba(201,168,76,0.08);
+  --admin-bg: #f5f5f7;
+  --admin-surface: #ffffff;
+  --admin-text: #1a1a2e;
+  --admin-text-secondary: #5a5a72;
+  --admin-border: rgba(0,0,0,0.12);
+  --admin-error: #d32f2f;
+  --admin-success: #2e7d32;
+
+  // Login-specific (dark surface)
+  --login-bg: #0f0f1a;
+  --login-surface: #1a1a2e;
+  --login-surface-alt: rgba(255,255,255,0.04);
+  --login-text: #e8e8f0;
+  --login-text-secondary: #9090a8;
+  --login-border: rgba(255,255,255,0.1);
+  --login-border-hover: rgba(255,255,255,0.25);
 }

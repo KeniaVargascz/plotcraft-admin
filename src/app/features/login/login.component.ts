@@ -18,121 +18,231 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
   standalone: true,
   imports: [FormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule],
   styles: [`
+    :host {
+      // Scope dark Material overrides to login only
+      --mdc-outlined-text-field-outline-color: var(--login-border);
+      --mdc-outlined-text-field-hover-outline-color: var(--login-border-hover);
+      --mdc-outlined-text-field-focus-outline-color: var(--admin-accent);
+      --mdc-outlined-text-field-label-text-color: var(--login-text-secondary);
+      --mdc-outlined-text-field-focus-label-text-color: var(--admin-accent);
+      --mdc-outlined-text-field-input-text-color: var(--login-text);
+      --mdc-outlined-text-field-caret-color: var(--admin-accent);
+      --mat-select-trigger-text-color: var(--login-text);
+      --mat-select-enabled-arrow-color: var(--login-text-secondary);
+      --mat-option-label-text-color: var(--admin-text);
+    }
+
     .login-shell {
       min-height: 100vh;
       display: grid;
       place-items: center;
-      background: #1a1a2e;
+      background: var(--login-bg);
+      padding: 1rem;
     }
+
     .login-card {
-      width: min(420px, 90vw);
-      padding: 2.5rem;
+      width: min(460px, 92vw);
+      padding: 2.5rem 2rem;
       border-radius: 1.25rem;
-      background: #16213e;
-      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--login-surface);
+      border: 1px solid var(--login-border);
+      overflow: hidden;
     }
+
     .logo {
       text-align: center;
       font-size: 1.5rem;
       font-weight: 700;
-      color: #c9a84c;
-      margin-bottom: 2rem;
+      color: var(--admin-accent);
+      margin-bottom: 0.25rem;
     }
-    .form-stack { display: grid; gap: 1.25rem; }
+
+    .logo-sub {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--login-text-secondary);
+      margin-bottom: 2rem;
+      letter-spacing: 0.03em;
+    }
+
+    .form-stack { display: grid; gap: 1rem; }
+
     .error-msg {
       color: #ef5350;
       font-size: 0.85rem;
       text-align: center;
-      margin-top: 0.5rem;
+      margin-top: 0.25rem;
+      padding: 0.5rem;
+      background: rgba(239,83,80,0.08);
+      border-radius: 0.5rem;
     }
+
     mat-form-field { width: 100%; }
+
     .submit-btn {
       width: 100%;
-      height: 44px;
-      background: #c9a84c !important;
-      color: #1a1a2e !important;
+      height: 46px;
+      background: var(--admin-accent) !important;
+      color: var(--login-surface) !important;
       font-weight: 600;
+      font-size: 0.95rem;
       border-radius: 0.75rem;
+      letter-spacing: 0.02em;
+      transition: background 0.15s;
     }
-    .tfa-info {
+    .submit-btn:hover:not([disabled]) {
+      background: var(--admin-accent-hover) !important;
+    }
+
+    .info-text {
       text-align: center;
-      color: #a0a0b8;
+      color: var(--login-text-secondary);
       font-size: 0.85rem;
-      margin-bottom: 0.5rem;
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
     }
+
     .back-link {
       text-align: center;
-      margin-top: 0.75rem;
+      margin-top: 1rem;
     }
     .back-link a {
-      color: #a0a0b8;
+      color: var(--login-text-secondary);
       font-size: 0.85rem;
       cursor: pointer;
-      text-decoration: underline;
+      text-decoration: none;
+      transition: color 0.15s;
     }
-    .qr-container { text-align: center; margin: 1rem 0; }
-    .qr-container img { max-width: 180px; border-radius: 0.5rem; }
-    .secret-code {
-      font-family: monospace; font-size: 0.8rem; background: rgba(255,255,255,0.05);
-      color: #c9a84c; padding: 0.5rem; border-radius: 0.5rem; text-align: center;
-      word-break: break-all; margin: 0.75rem 0;
-    }
-    .setup-info { color: #a0a0b8; font-size: 0.85rem; text-align: center; margin-bottom: 0.75rem; }
+    .back-link a:hover { color: var(--login-text); }
+
     .forgot-link { text-align: center; margin-top: 0.75rem; }
-    .forgot-link a { color: #c9a84c; font-size: 0.85rem; cursor: pointer; text-decoration: underline; }
+    .forgot-link a {
+      color: var(--admin-accent);
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .forgot-link a:hover { text-decoration: underline; }
+
+    .qr-container {
+      text-align: center;
+      margin: 0.75rem 0;
+      padding: 1rem;
+      background: #ffffff;
+      border-radius: 0.75rem;
+      display: inline-block;
+      width: 100%;
+    }
+    .qr-container img {
+      max-width: 160px;
+      width: 100%;
+      border-radius: 0.25rem;
+    }
+
+    .qr-hint {
+      font-size: 0.78rem;
+      color: var(--login-text-secondary);
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
+
     .channel-toggle {
-      display: flex; justify-content: center; gap: 1rem; margin-bottom: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
     }
     .channel-btn {
-      padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.15);
-      background: transparent; color: #a0a0b8; cursor: pointer; font-size: 0.85rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--login-border);
+      background: transparent;
+      color: var(--login-text-secondary);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: inherit;
       transition: all 0.15s;
     }
-    .channel-btn.active { border-color: #c9a84c; color: #c9a84c; background: rgba(201,168,76,0.1); }
-    .success-msg { color: #4caf50; font-size: 0.85rem; text-align: center; margin-top: 0.5rem; }
-    .phone-row { display: flex; gap: 0.75rem; }
-    .phone-row .country-code { width: 180px; flex-shrink: 0; }
-    .phone-row .local-number { flex: 1; }
-    .phone-row mat-select { color: #e0e0e0; }
-    ::ng-deep .phone-row .mat-mdc-select-panel { max-height: 250px; }
+    .channel-btn:hover {
+      border-color: var(--login-border-hover);
+      color: var(--login-text);
+    }
+    .channel-btn.active {
+      border-color: var(--admin-accent);
+      color: var(--admin-accent);
+      background: var(--admin-accent-bg);
+    }
+
+    .success-msg {
+      color: #66bb6a;
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 0.25rem;
+      padding: 0.5rem;
+      background: rgba(102,187,106,0.08);
+      border-radius: 0.5rem;
+    }
+
+    .phone-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .phone-row .country-code {
+      width: 145px;
+      flex-shrink: 0;
+    }
+    .phone-row .local-number { flex: 1; min-width: 0; }
+
+    .divider {
+      height: 1px;
+      background: var(--login-border);
+      margin: 0.25rem 0;
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      color: var(--admin-accent);
+      background: var(--admin-accent-bg);
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      margin: 0 auto 1rem;
+      width: fit-content;
+    }
   `],
   template: `
     <div class="login-shell">
       <div class="login-card">
-        <div class="logo">PlotCraft Admin</div>
+        <div class="logo">PlotCraft</div>
+        <div class="logo-sub">Panel de Administracion</div>
 
         @if (step() === 'login') {
-          <!-- Step 1: Email + Password -->
           <form class="form-stack" (ngSubmit)="onLogin()">
             <mat-form-field appearance="outline">
               <mat-label>Email</mat-label>
               <input matInput type="email" [(ngModel)]="email" name="email" required />
             </mat-form-field>
             <mat-form-field appearance="outline">
-              <mat-label>Password</mat-label>
+              <mat-label>Contrasena</mat-label>
               <input matInput [type]="showPass() ? 'text' : 'password'" [(ngModel)]="password" name="password" required />
               <button mat-icon-button matSuffix type="button" (click)="showPass.set(!showPass())">
                 <mat-icon>{{ showPass() ? 'visibility_off' : 'visibility' }}</mat-icon>
               </button>
             </mat-form-field>
             <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
-              @if (loading()) {
-                <mat-spinner diameter="20" />
-              } @else {
-                Iniciar sesion
-              }
+              @if (loading()) { <mat-spinner diameter="20" /> } @else { Iniciar sesion }
             </button>
-            @if (error()) {
-              <p class="error-msg">{{ error() }}</p>
-            }
+            @if (error()) { <p class="error-msg">{{ error() }}</p> }
             <div class="forgot-link">
               <a (click)="step.set('forgot')">Olvide mi contrasena</a>
             </div>
           </form>
+
         } @else if (step() === 'forgot') {
-          <!-- Forgot password: send OTP via SMS/WhatsApp -->
           <form class="form-stack" (ngSubmit)="onForgotPassword()">
-            <p class="tfa-info">Ingresa tu email de administrador para recibir un codigo de recuperacion</p>
+            <p class="info-text">Ingresa tu email de administrador para recibir un codigo de recuperacion</p>
             <mat-form-field appearance="outline">
               <mat-label>Email</mat-label>
               <input matInput type="email" [(ngModel)]="forgotEmail" name="forgotEmail" required />
@@ -144,16 +254,14 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
             <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
               @if (loading()) { <mat-spinner diameter="20" /> } @else { Enviar codigo }
             </button>
-            @if (forgotSent()) {
-              <p class="success-msg">Si la cuenta existe, se envio un codigo a tu telefono</p>
-            }
+            @if (forgotSent()) { <p class="success-msg">Si la cuenta existe, se envio un codigo a tu telefono</p> }
             @if (error()) { <p class="error-msg">{{ error() }}</p> }
             <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
           </form>
+
         } @else if (step() === 'reset') {
-          <!-- Reset password with OTP -->
           <form class="form-stack" (ngSubmit)="onResetPassword()">
-            <p class="tfa-info">Ingresa el codigo recibido y tu nueva contrasena</p>
+            <p class="info-text">Ingresa el codigo recibido y tu nueva contrasena</p>
             <mat-form-field appearance="outline">
               <mat-label>Codigo OTP</mat-label>
               <input matInput [(ngModel)]="resetCode" name="resetCode" maxlength="6" required />
@@ -168,40 +276,35 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
             @if (error()) { <p class="error-msg">{{ error() }}</p> }
             <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
           </form>
+
         } @else if (step() === 'tfa-verify') {
-          <!-- Step 2a: Verify existing 2FA -->
           <form class="form-stack" (ngSubmit)="onVerifyTfa()">
-            <p class="tfa-info">Ingresa el codigo de tu aplicacion de autenticacion</p>
+            <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">lock</mat-icon> Verificacion 2FA</div>
+            <p class="info-text">Ingresa el codigo de tu aplicacion de autenticacion</p>
             <mat-form-field appearance="outline">
               <mat-label>Codigo 2FA</mat-label>
               <input matInput type="text" [(ngModel)]="tfaCode" name="tfaCode" required
                 maxlength="6" autocomplete="one-time-code" />
             </mat-form-field>
             <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
-              @if (loading()) {
-                <mat-spinner diameter="20" />
-              } @else {
-                Verificar
-              }
+              @if (loading()) { <mat-spinner diameter="20" /> } @else { Verificar }
             </button>
-            @if (error()) {
-              <p class="error-msg">{{ error() }}</p>
-            }
-            <div class="back-link">
-              <a (click)="resetToLogin()">Volver al login</a>
-            </div>
+            @if (error()) { <p class="error-msg">{{ error() }}</p> }
+            <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
           </form>
+
         } @else if (step() === 'tfa-setup') {
-          <!-- Step 2b: Mandatory 2FA + phone setup -->
           <form class="form-stack" (ngSubmit)="onSetupAndEnable()">
-            <p class="setup-info">
-              La autenticacion de dos factores es obligatoria.
-              Escanea el QR con tu app (Google Authenticator, Authy, etc.)
+            <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">security</mat-icon> Configuracion obligatoria</div>
+            <p class="info-text">
+              Escanea el codigo QR con tu app de autenticacion
+              (Google Authenticator, Authy, etc.)
             </p>
             <div class="qr-container">
-              <img [src]="setupQr()" alt="QR" />
+              <img [src]="setupQr()" alt="QR Code" />
             </div>
-            <p style="font-size:0.8rem;color:#a0a0b8;text-align:center">Si no puedes escanear el QR, ingresa la URL manualmente en tu app</p>
+            <p class="qr-hint">Si no puedes escanear, ingresa la URL manualmente en tu app</p>
+            <div class="divider"></div>
             <mat-form-field appearance="outline">
               <mat-label>Codigo de verificacion</mat-label>
               <input matInput type="text" [(ngModel)]="tfaCode" name="tfaCode" required
@@ -223,18 +326,10 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
               </mat-form-field>
             </div>
             <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || !setupPhoneLocal">
-              @if (loading()) {
-                <mat-spinner diameter="20" />
-              } @else {
-                Activar 2FA e iniciar sesion
-              }
+              @if (loading()) { <mat-spinner diameter="20" /> } @else { Activar 2FA e iniciar sesion }
             </button>
-            @if (error()) {
-              <p class="error-msg">{{ error() }}</p>
-            }
-            <div class="back-link">
-              <a (click)="resetToLogin()">Volver al login</a>
-            </div>
+            @if (error()) { <p class="error-msg">{{ error() }}</p> }
+            <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
           </form>
         }
       </div>
