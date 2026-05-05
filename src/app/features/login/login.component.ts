@@ -8,13 +8,15 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
+import { COUNTRY_CODES } from '../../core/constants/country-codes';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [FormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule],
   styles: [`
     .login-shell {
       min-height: 100vh;
@@ -88,6 +90,11 @@ import { environment } from '../../../environments/environment';
     }
     .channel-btn.active { border-color: #c9a84c; color: #c9a84c; background: rgba(201,168,76,0.1); }
     .success-msg { color: #4caf50; font-size: 0.85rem; text-align: center; margin-top: 0.5rem; }
+    .phone-row { display: flex; gap: 0.75rem; }
+    .phone-row .country-code { width: 180px; flex-shrink: 0; }
+    .phone-row .local-number { flex: 1; }
+    .phone-row mat-select { color: #e0e0e0; }
+    ::ng-deep .phone-row .mat-mdc-select-panel { max-height: 250px; }
   `],
   template: `
     <div class="login-shell">
@@ -200,12 +207,22 @@ import { environment } from '../../../environments/environment';
               <input matInput type="text" [(ngModel)]="tfaCode" name="tfaCode" required
                 maxlength="6" autocomplete="one-time-code" />
             </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Telefono (para recuperar contrasena)</mat-label>
-              <input matInput type="tel" [(ngModel)]="setupPhone" name="phone" required
-                placeholder="+521234567890" />
-            </mat-form-field>
-            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || !setupPhone">
+            <div class="phone-row">
+              <mat-form-field appearance="outline" class="country-code">
+                <mat-label>Lada</mat-label>
+                <mat-select [(ngModel)]="setupCountryCode" name="countryCode">
+                  @for (c of countryCodes; track c.code) {
+                    <mat-option [value]="c.code">{{ c.flag }} {{ c.code }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="local-number">
+                <mat-label>Numero local</mat-label>
+                <input matInput [(ngModel)]="setupPhoneLocal" name="phone" required
+                  placeholder="1234567890" />
+              </mat-form-field>
+            </div>
+            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || !setupPhoneLocal">
               @if (loading()) {
                 <mat-spinner diameter="20" />
               } @else {
@@ -237,7 +254,9 @@ export class LoginComponent {
   showPass = signal(false);
   step = signal<'login' | 'tfa-verify' | 'tfa-setup' | 'forgot' | 'reset'>('login');
   setupQr = signal('');
-  setupPhone = '';
+  readonly countryCodes = COUNTRY_CODES;
+  setupCountryCode = '+52';
+  setupPhoneLocal = '';
   private tfaToken = '';
 
   onLogin() {
@@ -282,7 +301,8 @@ export class LoginComponent {
   onSetupAndEnable() {
     this.loading.set(true);
     this.error.set('');
-    this.auth.setupAndEnable(this.tfaToken, this.tfaCode, this.setupPhone).subscribe({
+    const phone = this.setupCountryCode + this.setupPhoneLocal.replace(/\D/g, '');
+    this.auth.setupAndEnable(this.tfaToken, this.tfaCode, phone).subscribe({
       next: () => {
         this.loading.set(false);
         this.router.navigate(['/dashboard']);
@@ -351,7 +371,8 @@ export class LoginComponent {
     this.tfaCode = '';
     this.tfaToken = '';
     this.setupQr.set('');
-    this.setupPhone = '';
+    this.setupCountryCode = '+52';
+    this.setupPhoneLocal = '';
     this.error.set('');
   }
 }

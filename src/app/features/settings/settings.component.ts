@@ -9,7 +9,9 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
 import { HttpApiService } from '../../core/services/http-api.service';
+import { COUNTRY_CODES } from '../../core/constants/country-codes';
 
 interface AppSetting {
   key: string;
@@ -38,6 +40,7 @@ interface SettingsForm {
     MatCardModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatSlideToggleModule,
     MatSnackBarModule, MatProgressSpinnerModule, MatIconModule,
+    MatSelectModule,
   ],
   styles: [`
     h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #1a1a2e; }
@@ -88,6 +91,9 @@ interface SettingsForm {
     .tfa-form { display: flex; gap: 0.75rem; align-items: flex-start; }
     .tfa-form mat-form-field { flex: 1; }
     .tfa-btn { height: 56px !important; }
+    .phone-row { display: flex; gap: 0.75rem; align-items: flex-start; }
+    .phone-row .country-code { width: 200px; flex-shrink: 0; }
+    .phone-row .local-number { flex: 1; }
     .banner-textarea { width: 100%; min-height: 120px; font-family: monospace; font-size: 0.85rem; }
     .banner-preview {
       margin-top: 0.75rem;
@@ -231,10 +237,18 @@ interface SettingsForm {
         <mat-card class="tfa-card">
           <mat-card-content>
             <div class="section-title"><mat-icon>phone</mat-icon> Telefono (para recuperar contrasena)</div>
-            <div class="tfa-form">
-              <mat-form-field appearance="outline">
-                <mat-label>Numero de telefono</mat-label>
-                <input matInput [ngModel]="phoneNumber()" (ngModelChange)="phoneNumber.set($event)" placeholder="+521234567890" />
+            <div class="phone-row">
+              <mat-form-field appearance="outline" class="country-code">
+                <mat-label>Lada</mat-label>
+                <mat-select [(ngModel)]="phoneCountryCode">
+                  @for (c of countryCodes; track c.code) {
+                    <mat-option [value]="c.code">{{ c.flag }} {{ c.code }} {{ c.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="local-number">
+                <mat-label>Numero local</mat-label>
+                <input matInput [(ngModel)]="phoneLocal" placeholder="1234567890" />
               </mat-form-field>
             </div>
             <div class="tfa-form">
@@ -422,20 +436,34 @@ export class SettingsComponent implements OnInit {
   }
 
   // Phone
-  phoneNumber = signal('');
+  readonly countryCodes = COUNTRY_CODES;
+  phoneCountryCode = '+52';
+  phoneLocal = '';
   phoneTfaCode = '';
   phoneSaving = signal(false);
 
   private loadPhone() {
     this.api.get<{ phone?: string | null }>('/admin/auth/me').subscribe({
-      next: (user) => this.phoneNumber.set((user as any).phone ?? ''),
+      next: (user) => {
+        const phone = (user as any).phone ?? '';
+        if (phone) {
+          const match = COUNTRY_CODES.find(c => phone.startsWith(c.code));
+          if (match) {
+            this.phoneCountryCode = match.code;
+            this.phoneLocal = phone.slice(match.code.length);
+          } else {
+            this.phoneLocal = phone;
+          }
+        }
+      },
     });
   }
 
   updatePhone() {
     this.phoneSaving.set(true);
+    const phone = this.phoneCountryCode + this.phoneLocal.replace(/\D/g, '');
     this.api.post<{ message: string }>('/admin/auth/update-phone', {
-      phone: this.phoneNumber(),
+      phone,
       tfaCode: this.phoneTfaCode,
     }).subscribe({
       next: () => {
