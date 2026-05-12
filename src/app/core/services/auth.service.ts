@@ -65,7 +65,7 @@ export class AuthService {
       .pipe(map((r) => r.data));
   }
 
-  sendOtp(tfaToken: string, channel: 'sms' | 'whatsapp'): Observable<{ sent: boolean }> {
+  sendOtp(tfaToken: string, channel: 'sms' | 'whatsapp' | 'email'): Observable<{ sent: boolean }> {
     return this.http
       .post<ApiResponse<{ sent: boolean }>>(
         `${environment.apiUrl}/admin/auth/send-otp`,
