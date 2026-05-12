@@ -20,11 +20,6 @@ interface LoginResponse {
   user: AdminUser;
 }
 
-interface TfaRequiredResponse {
-  tfaRequired: true;
-  tfaToken: string;
-}
-
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -52,46 +47,38 @@ export class AuthService {
     }
   }
 
-  login(email: string, password: string): Observable<LoginResponse | TfaRequiredResponse> {
+  login(email: string, password: string): Observable<{ phoneRequired: boolean; tfaToken: string }> {
     return this.http
-      .post<ApiResponse<LoginResponse | TfaRequiredResponse>>(
+      .post<ApiResponse<{ phoneRequired: boolean; tfaToken: string }>>(
         `${environment.apiUrl}/admin/auth/login`,
         { email, password },
       )
-      .pipe(
-        map((r) => r.data),
-        tap((res) => {
-          if (!('tfaRequired' in res)) {
-            const loginRes = res as LoginResponse;
-            localStorage.setItem(this.TOKEN_KEY, loginRes.accessToken);
-            localStorage.setItem(this.REFRESH_KEY, loginRes.refreshToken);
-            this.currentUser.set(loginRes.user);
-          }
-        }),
-      );
+      .pipe(map((r) => r.data));
   }
 
-  verifyTfa(tfaToken: string, code: string): Observable<LoginResponse> {
+  registerPhone(tfaToken: string, phone: string): Observable<{ registered: boolean }> {
     return this.http
-      .post<ApiResponse<LoginResponse>>(
-        `${environment.apiUrl}/admin/auth/tfa/verify`,
-        { tfaToken, code },
+      .post<ApiResponse<{ registered: boolean }>>(
+        `${environment.apiUrl}/admin/auth/register-phone`,
+        { tfaToken, phone },
       )
-      .pipe(
-        map((r) => r.data),
-        tap((res) => {
-          localStorage.setItem(this.TOKEN_KEY, res.accessToken);
-          localStorage.setItem(this.REFRESH_KEY, res.refreshToken);
-          this.currentUser.set(res.user);
-        }),
-      );
+      .pipe(map((r) => r.data));
   }
 
-  setupAndEnable(tfaToken: string, code: string, phone: string): Observable<LoginResponse> {
+  sendOtp(tfaToken: string, channel: 'sms' | 'whatsapp'): Observable<{ sent: boolean }> {
+    return this.http
+      .post<ApiResponse<{ sent: boolean }>>(
+        `${environment.apiUrl}/admin/auth/send-otp`,
+        { tfaToken, channel },
+      )
+      .pipe(map((r) => r.data));
+  }
+
+  verifyOtp(tfaToken: string, code: string): Observable<LoginResponse> {
     return this.http
       .post<ApiResponse<LoginResponse>>(
-        `${environment.apiUrl}/admin/auth/tfa/setup-and-enable`,
-        { tfaToken, code, phone },
+        `${environment.apiUrl}/admin/auth/verify-otp`,
+        { tfaToken, code },
       )
       .pipe(
         map((r) => r.data),

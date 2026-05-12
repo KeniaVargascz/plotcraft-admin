@@ -44,3 +44,34 @@ body {
   --login-border: rgba(255,255,255,0.1);
   --login-border-hover: rgba(255,255,255,0.25);
 }
+
+// Login select panel (rendered in CDK overlay, outside component scope)
+// Must override Material M3 tokens set on html by mat.theme()
+.cdk-overlay-container .login-lada-panel {
+  --mat-select-panel-background-color: #1a1a2e;
+  --mat-option-label-text-color: #e8e8f0;
+  --mat-option-hover-state-layer-color: rgba(201,168,76,0.12);
+  --mat-option-focus-state-layer-color: rgba(201,168,76,0.12);
+  --mat-option-selected-state-layer-color: rgba(201,168,76,0.18);
+  --mat-option-selected-state-label-text-color: #c9a84c;
+  background: #1a1a2e !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+}
+
+.cdk-overlay-container .login-lada-panel .mat-mdc-option {
+  color: #e8e8f0 !important;
+
+  .mdc-list-item__primary-text,
+  span {
+    color: inherit !important;
+  }
+
+  &:hover, &:focus {
+    background: rgba(201,168,76,0.12) !important;
+  }
+
+  &.mdc-list-item--selected {
+    background: rgba(201,168,76,0.18) !important;
+    color: #c9a84c !important;
+  }
+}

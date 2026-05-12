@@ -7,7 +7,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = localStorage.getItem('admin_access_token');
 
-  if (token) {
+  if (token && token !== 'undefined' && token !== 'null') {
     req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
   }
 

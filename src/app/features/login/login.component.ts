@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -16,26 +16,73 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
 @Component({
   selector: 'app-login',
   standalone: true,
+  encapsulation: ViewEncapsulation.None,
   imports: [FormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule],
   styles: [`
-    // Force Material dark overrides scoped to login
-    :host ::ng-deep .login-shell {
-      .mat-mdc-form-field {
-        --mdc-outlined-text-field-outline-color: rgba(255,255,255,0.15);
-        --mdc-outlined-text-field-hover-outline-color: rgba(255,255,255,0.3);
-        --mdc-outlined-text-field-focus-outline-color: #c9a84c;
-        --mdc-outlined-text-field-label-text-color: rgba(255,255,255,0.55);
-        --mdc-outlined-text-field-focus-label-text-color: #c9a84c;
-        --mdc-outlined-text-field-input-text-color: #e8e8f0;
-        --mdc-outlined-text-field-caret-color: #c9a84c;
-      }
-      .mat-mdc-select {
-        --mat-select-trigger-text-color: #e8e8f0;
-        --mat-select-enabled-arrow-color: rgba(255,255,255,0.55);
-      }
-      .mat-mdc-icon-button {
-        --mdc-icon-button-icon-color: rgba(255,255,255,0.55);
-      }
+    .login-shell .mat-mdc-form-field {
+      --mdc-outlined-text-field-outline-color: rgba(255,255,255,0.15);
+      --mdc-outlined-text-field-hover-outline-color: rgba(255,255,255,0.3);
+      --mdc-outlined-text-field-focus-outline-color: #c9a84c;
+      --mdc-outlined-text-field-label-text-color: rgba(255,255,255,0.55);
+      --mdc-outlined-text-field-focus-label-text-color: #c9a84c;
+      --mdc-outlined-text-field-input-text-color: #e8e8f0;
+      --mdc-outlined-text-field-caret-color: #c9a84c;
+      --mdc-outlined-text-field-disabled-input-text-color: rgba(255,255,255,0.35);
+      --mdc-outlined-text-field-disabled-label-text-color: rgba(255,255,255,0.3);
+      --mdc-outlined-text-field-container-shape: 0.75rem;
+    }
+    .login-shell .mat-mdc-select {
+      --mat-select-enabled-trigger-text-color: #e8e8f0;
+      --mat-select-trigger-text-color: #e8e8f0;
+      --mat-select-placeholder-text-color: rgba(255,255,255,0.55);
+      --mat-select-enabled-arrow-color: rgba(255,255,255,0.55);
+      --mat-select-focused-arrow-color: #c9a84c;
+    }
+    .login-shell .mat-mdc-select-value-text {
+      color: #e8e8f0 !important;
+    }
+    .login-shell .mat-mdc-select-trigger .mat-mdc-select-value {
+      color: #e8e8f0 !important;
+    }
+    .login-shell .mat-mdc-icon-button {
+      --mdc-icon-button-icon-color: rgba(255,255,255,0.55);
+    }
+    .login-shell .mdc-floating-label {
+      color: rgba(255,255,255,0.55) !important;
+    }
+    .login-shell .mdc-text-field--focused .mdc-floating-label {
+      color: #c9a84c !important;
+    }
+    .login-shell .mdc-notched-outline__leading,
+    .login-shell .mdc-notched-outline__notch,
+    .login-shell .mdc-notched-outline__trailing {
+      border-color: rgba(255,255,255,0.15) !important;
+    }
+    .login-shell .mdc-notched-outline__leading {
+      border-radius: 0.75rem 0 0 0.75rem !important;
+      width: 0.75rem !important;
+    }
+    .login-shell .mdc-notched-outline__trailing {
+      border-radius: 0 0.75rem 0.75rem 0 !important;
+    }
+    .login-shell .mdc-notched-outline__notch {
+      border-left: none !important;
+    }
+    .login-shell .mdc-text-field--focused .mdc-notched-outline__leading,
+    .login-shell .mdc-text-field--focused .mdc-notched-outline__notch,
+    .login-shell .mdc-text-field--focused .mdc-notched-outline__trailing {
+      border-color: #c9a84c !important;
+    }
+    .login-shell .mat-mdc-input-element {
+      color: #e8e8f0 !important;
+    }
+    .login-shell input:-webkit-autofill,
+    .login-shell input:-webkit-autofill:hover,
+    .login-shell input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #e8e8f0 !important;
+      -webkit-box-shadow: 0 0 0 1000px #1a1a2e inset !important;
+      box-shadow: 0 0 0 1000px #1a1a2e inset !important;
+      transition: background-color 5000s ease-in-out 0s;
     }
 
     .login-shell {
@@ -130,28 +177,6 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
     }
     .forgot-link a:hover { text-decoration: underline; }
 
-    .qr-container {
-      text-align: center;
-      margin: 0.75rem 0;
-      padding: 1rem;
-      background: #ffffff;
-      border-radius: 0.75rem;
-      display: inline-block;
-      width: 100%;
-    }
-    .qr-container img {
-      max-width: 160px;
-      width: 100%;
-      border-radius: 0.25rem;
-    }
-
-    .qr-hint {
-      font-size: 0.78rem;
-      color: var(--login-text-secondary);
-      text-align: center;
-      margin-bottom: 0.75rem;
-    }
-
     .channel-toggle {
       display: flex;
       justify-content: center;
@@ -199,12 +224,6 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
     }
     .phone-row .local-number { flex: 1; min-width: 0; }
 
-    .divider {
-      height: 1px;
-      background: var(--login-border);
-      margin: 0.25rem 0;
-    }
-
     .step-badge {
       display: inline-flex;
       align-items: center;
@@ -216,6 +235,22 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
       border-radius: 1rem;
       margin: 0 auto 1rem;
       width: fit-content;
+    }
+
+    .resend-link {
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+    .resend-link a {
+      color: var(--admin-accent);
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .resend-link a:hover { text-decoration: underline; }
+    .resend-link a.disabled {
+      color: var(--login-text-secondary);
+      pointer-events: none;
     }
   `],
   template: `
@@ -246,9 +281,73 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
             </div>
           </form>
 
+        } @else if (step() === 'phone') {
+          <form class="form-stack" (ngSubmit)="onRegisterPhone()">
+            <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">phone</mat-icon> Registro de telefono</div>
+            <p class="info-text">Registra tu numero de telefono para recibir codigos de verificacion</p>
+            <div class="phone-row">
+              <mat-form-field appearance="outline" class="country-code">
+                <mat-label>Lada</mat-label>
+                <mat-select [(ngModel)]="phoneCountryCode" name="countryCode" panelClass="login-lada-panel">
+                  @for (c of countryCodes; track c.code) {
+                    <mat-option [value]="c.code">{{ c.flag }} {{ c.code }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="local-number">
+                <mat-label>Numero local</mat-label>
+                <input matInput [(ngModel)]="phoneLocal" name="phone" required placeholder="1234567890" />
+              </mat-form-field>
+            </div>
+            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || !phoneLocal">
+              @if (loading()) { <mat-spinner diameter="20" /> } @else { Continuar }
+            </button>
+            @if (error()) { <p class="error-msg">{{ error() }}</p> }
+            <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
+          </form>
+
+        } @else if (step() === 'send-otp') {
+          <form class="form-stack" (ngSubmit)="onSendOtp()">
+            <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">sms</mat-icon> Verificacion</div>
+            <p class="info-text">Selecciona como recibir tu codigo de verificacion</p>
+            <div class="channel-toggle">
+              <button type="button" class="channel-btn" [class.active]="otpChannel() === 'sms'" (click)="otpChannel.set('sms')">SMS</button>
+              <button type="button" class="channel-btn" [class.active]="otpChannel() === 'whatsapp'" (click)="otpChannel.set('whatsapp')">WhatsApp</button>
+            </div>
+            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
+              @if (loading()) { <mat-spinner diameter="20" /> } @else { Enviar codigo }
+            </button>
+            @if (error()) { <p class="error-msg">{{ error() }}</p> }
+            <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
+          </form>
+
+        } @else if (step() === 'otp') {
+          <form class="form-stack" (ngSubmit)="onVerifyOtp()">
+            <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">lock</mat-icon> Codigo OTP</div>
+            <p class="info-text">Ingresa el codigo de 6 digitos enviado a tu telefono</p>
+            <mat-form-field appearance="outline">
+              <mat-label>Codigo OTP</mat-label>
+              <input matInput [(ngModel)]="otpCode" name="otpCode" required maxlength="6" autocomplete="one-time-code" />
+            </mat-form-field>
+            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || otpCode.length < 6">
+              @if (loading()) { <mat-spinner diameter="20" /> } @else { Verificar }
+            </button>
+            @if (error()) { <p class="error-msg">{{ error() }}</p> }
+            <div class="resend-link">
+              <a (click)="onResendOtp()" [class.disabled]="resendCooldown() > 0">
+                @if (resendCooldown() > 0) {
+                  Reenviar en {{ resendCooldown() }}s
+                } @else {
+                  Reenviar codigo
+                }
+              </a>
+            </div>
+            <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
+          </form>
+
         } @else if (step() === 'forgot') {
           <form class="form-stack" (ngSubmit)="onForgotPassword()">
-            <p class="info-text">Ingresa tu email de administrador para recibir un codigo de recuperacion</p>
+            <p class="info-text">Ingresa tu email de administrador para recibir un codigo de recuperacion por SMS, WhatsApp o correo electronico</p>
             <mat-form-field appearance="outline">
               <mat-label>Email</mat-label>
               <input matInput type="email" [(ngModel)]="forgotEmail" name="forgotEmail" required />
@@ -260,7 +359,15 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
             <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
               @if (loading()) { <mat-spinner diameter="20" /> } @else { Enviar codigo }
             </button>
-            @if (forgotSent()) { <p class="success-msg">Si la cuenta existe, se envio un codigo a tu telefono</p> }
+            @if (forgotSent()) {
+              <p class="success-msg">
+                @if (forgotVia() === 'email') {
+                  Se envio un codigo a tu correo electronico
+                } @else {
+                  Se envio un codigo a tu telefono
+                }
+              </p>
+            }
             @if (error()) { <p class="error-msg">{{ error() }}</p> }
             <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
           </form>
@@ -282,61 +389,6 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
             @if (error()) { <p class="error-msg">{{ error() }}</p> }
             <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
           </form>
-
-        } @else if (step() === 'tfa-verify') {
-          <form class="form-stack" (ngSubmit)="onVerifyTfa()">
-            <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">lock</mat-icon> Verificacion 2FA</div>
-            <p class="info-text">Ingresa el codigo de tu aplicacion de autenticacion</p>
-            <mat-form-field appearance="outline">
-              <mat-label>Codigo 2FA</mat-label>
-              <input matInput type="text" [(ngModel)]="tfaCode" name="tfaCode" required
-                maxlength="6" autocomplete="one-time-code" />
-            </mat-form-field>
-            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
-              @if (loading()) { <mat-spinner diameter="20" /> } @else { Verificar }
-            </button>
-            @if (error()) { <p class="error-msg">{{ error() }}</p> }
-            <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
-          </form>
-
-        } @else if (step() === 'tfa-setup') {
-          <form class="form-stack" (ngSubmit)="onSetupAndEnable()">
-            <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">security</mat-icon> Configuracion obligatoria</div>
-            <p class="info-text">
-              Escanea el codigo QR con tu app de autenticacion
-              (Google Authenticator, Authy, etc.)
-            </p>
-            <div class="qr-container">
-              <img [src]="setupQr()" alt="QR Code" />
-            </div>
-            <p class="qr-hint">Si no puedes escanear, ingresa la URL manualmente en tu app</p>
-            <div class="divider"></div>
-            <mat-form-field appearance="outline">
-              <mat-label>Codigo de verificacion</mat-label>
-              <input matInput type="text" [(ngModel)]="tfaCode" name="tfaCode" required
-                maxlength="6" autocomplete="one-time-code" />
-            </mat-form-field>
-            <div class="phone-row">
-              <mat-form-field appearance="outline" class="country-code">
-                <mat-label>Lada</mat-label>
-                <mat-select [(ngModel)]="setupCountryCode" name="countryCode">
-                  @for (c of countryCodes; track c.code) {
-                    <mat-option [value]="c.code">{{ c.flag }} {{ c.code }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="local-number">
-                <mat-label>Numero local</mat-label>
-                <input matInput [(ngModel)]="setupPhoneLocal" name="phone" required
-                  placeholder="1234567890" />
-              </mat-form-field>
-            </div>
-            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || !setupPhoneLocal">
-              @if (loading()) { <mat-spinner diameter="20" /> } @else { Activar 2FA e iniciar sesion }
-            </button>
-            @if (error()) { <p class="error-msg">{{ error() }}</p> }
-            <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
-          </form>
         }
       </div>
     </div>
@@ -347,34 +399,46 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
 
+  // Login
   email = '';
   password = '';
-  tfaCode = '';
   loading = signal(false);
   error = signal('');
   showPass = signal(false);
-  step = signal<'login' | 'tfa-verify' | 'tfa-setup' | 'forgot' | 'reset'>('login');
-  setupQr = signal('');
+  step = signal<'login' | 'phone' | 'send-otp' | 'otp' | 'forgot' | 'reset'>('login');
+
+  // Phone registration
   readonly countryCodes = COUNTRY_CODES;
-  setupCountryCode = '+52';
-  setupPhoneLocal = '';
+  phoneCountryCode = '+52';
+  phoneLocal = '';
+
+  // OTP
+  otpChannel = signal<'sms' | 'whatsapp'>('sms');
+  otpCode = '';
+  resendCooldown = signal(0);
+  private resendTimer: ReturnType<typeof setInterval> | null = null;
   private tfaToken = '';
 
+  // Forgot / Reset
+  forgotEmail = '';
+  forgotChannel = signal<'sms' | 'whatsapp'>('sms');
+  forgotSent = signal(false);
+  forgotVia = signal<'email' | 'phone' | 'unknown'>('unknown');
+  resetCode = '';
+  resetNewPassword = '';
+
+  // Step 1: Login
   onLogin() {
     this.loading.set(true);
     this.error.set('');
     this.auth.login(this.email, this.password).subscribe({
-      next: (res: any) => {
+      next: (res) => {
         this.loading.set(false);
-        if (res.tfaRequired) {
-          this.tfaToken = res.tfaToken;
-          this.step.set('tfa-verify');
-        } else if (res.tfaSetupRequired) {
-          this.tfaToken = res.tfaToken;
-          this.setupQr.set(res.qrDataUrl);
-          this.step.set('tfa-setup');
+        this.tfaToken = res.tfaToken;
+        if (res.phoneRequired) {
+          this.step.set('phone');
         } else {
-          this.router.navigate(['/dashboard']);
+          this.step.set('send-otp');
         }
       },
       error: (err) => {
@@ -384,44 +448,68 @@ export class LoginComponent {
     });
   }
 
-  onVerifyTfa() {
+  // Step 2 (optional): Register phone
+  onRegisterPhone() {
     this.loading.set(true);
     this.error.set('');
-    this.auth.verifyTfa(this.tfaToken, this.tfaCode).subscribe({
+    const phone = this.phoneCountryCode + this.phoneLocal.replace(/\D/g, '');
+    this.auth.registerPhone(this.tfaToken, phone).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.step.set('send-otp');
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.handleTokenError(err) || this.error.set(err?.error?.error?.message || 'Error al registrar telefono');
+      },
+    });
+  }
+
+  // Step 3: Send OTP
+  onSendOtp() {
+    this.loading.set(true);
+    this.error.set('');
+    this.auth.sendOtp(this.tfaToken, this.otpChannel()).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.step.set('otp');
+        this.startResendCooldown();
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.handleTokenError(err) || this.error.set(err?.error?.error?.message || 'Error al enviar codigo');
+      },
+    });
+  }
+
+  // Step 4: Verify OTP
+  onVerifyOtp() {
+    this.loading.set(true);
+    this.error.set('');
+    this.auth.verifyOtp(this.tfaToken, this.otpCode).subscribe({
       next: () => {
         this.loading.set(false);
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err?.error?.error?.message || 'Codigo invalido');
+        this.handleTokenError(err) || this.error.set(err?.error?.error?.message || 'Codigo invalido');
       },
     });
   }
 
-  onSetupAndEnable() {
-    this.loading.set(true);
+  onResendOtp() {
+    if (this.resendCooldown() > 0) return;
     this.error.set('');
-    const phone = this.setupCountryCode + this.setupPhoneLocal.replace(/\D/g, '');
-    this.auth.setupAndEnable(this.tfaToken, this.tfaCode, phone).subscribe({
-      next: () => {
-        this.loading.set(false);
-        this.router.navigate(['/dashboard']);
-      },
+    this.auth.sendOtp(this.tfaToken, this.otpChannel()).subscribe({
+      next: () => this.startResendCooldown(),
       error: (err) => {
-        this.loading.set(false);
-        this.error.set(err?.error?.error?.message || 'Codigo invalido');
+        this.handleTokenError(err) || this.error.set(err?.error?.error?.message || 'Error al reenviar');
       },
     });
   }
 
-  // Forgot / Reset password
-  forgotEmail = '';
-  forgotChannel = signal<'sms' | 'whatsapp'>('sms');
-  forgotSent = signal(false);
-  resetCode = '';
-  resetNewPassword = '';
-
+  // Forgot password
   onForgotPassword() {
     this.loading.set(true);
     this.error.set('');
@@ -431,10 +519,11 @@ export class LoginComponent {
       email: this.forgotEmail,
       channel: this.forgotChannel(),
     }).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading.set(false);
+        this.forgotVia.set(res?.data?.via || 'unknown');
         this.forgotSent.set(true);
-        setTimeout(() => this.step.set('reset'), 2000);
+        setTimeout(() => this.step.set('reset'), 2500);
       },
       error: () => {
         this.loading.set(false);
@@ -452,13 +541,9 @@ export class LoginComponent {
       code: this.resetCode,
       newPassword: this.resetNewPassword,
     }).subscribe({
-      next: (res) => {
+      next: () => {
         this.loading.set(false);
-        if (res.success) {
-          this.step.set('login');
-        } else {
-          this.error.set(res.error?.message || 'Error al restablecer');
-        }
+        this.step.set('login');
       },
       error: (err) => {
         this.loading.set(false);
@@ -469,11 +554,37 @@ export class LoginComponent {
 
   resetToLogin() {
     this.step.set('login');
-    this.tfaCode = '';
     this.tfaToken = '';
-    this.setupQr.set('');
-    this.setupCountryCode = '+52';
-    this.setupPhoneLocal = '';
+    this.otpCode = '';
+    this.phoneLocal = '';
+    this.phoneCountryCode = '+52';
     this.error.set('');
+    this.clearResendTimer();
+  }
+
+  private handleTokenError(err: any): boolean {
+    if (err?.error?.error?.code === 'TFA_TOKEN_INVALID') {
+      this.error.set('La sesion expiro. Inicia sesion de nuevo.');
+      setTimeout(() => this.resetToLogin(), 2000);
+      return true;
+    }
+    return false;
+  }
+
+  private startResendCooldown() {
+    this.resendCooldown.set(60);
+    this.clearResendTimer();
+    this.resendTimer = setInterval(() => {
+      const val = this.resendCooldown() - 1;
+      this.resendCooldown.set(val);
+      if (val <= 0) this.clearResendTimer();
+    }, 1000);
+  }
+
+  private clearResendTimer() {
+    if (this.resendTimer) {
+      clearInterval(this.resendTimer);
+      this.resendTimer = null;
+    }
   }
 }
