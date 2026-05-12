@@ -167,9 +167,13 @@ interface UsersResponse {
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Acciones</th>
             <td mat-cell *matCellDef="let user">
-              <button mat-icon-button [matMenuTriggerFor]="menu">
-                <mat-icon>more_vert</mat-icon>
-              </button>
+              @if (actionLoading() === user.id) {
+                <mat-spinner diameter="24" />
+              } @else {
+                <button mat-icon-button [matMenuTriggerFor]="menu" [disabled]="!!actionLoading()">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+              }
               <mat-menu #menu="matMenu">
                 <button mat-menu-item (click)="viewDetail(user)">
                   <mat-icon>visibility</mat-icon> Ver detalle
@@ -216,6 +220,7 @@ export class UsersComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
 
   loading = signal(true);
+  actionLoading = signal<string | null>(null);
   users = signal<User[]>([]);
   pagination = signal<Pagination>({ page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false });
   search = signal('');
@@ -277,24 +282,34 @@ export class UsersComponent implements OnInit {
     const reason = (status === 'BANNED' || status === 'SUSPENDED')
       ? prompt('Razon (opcional):') ?? ''
       : '';
+    this.actionLoading.set(user.id);
     this.api.patch(`/admin/users/${user.id}/status`, { status, reason }).subscribe({
       next: () => {
+        this.actionLoading.set(null);
         this.snackBar.open(`${user.username}: estado cambiado a ${status}`, 'OK', { duration: 2000 });
         this.load(this.pagination().page, this.pagination().limit);
       },
-      error: () => this.snackBar.open('Error al cambiar estado', 'OK', { duration: 3000 }),
+      error: () => {
+        this.actionLoading.set(null);
+        this.snackBar.open('Error al cambiar estado', 'OK', { duration: 3000 });
+      },
     });
   }
 
   toggleAdmin(user: User) {
     const action = user.role === 'ADMIN' ? 'quitar permisos de admin a' : 'dar permisos de admin a';
     if (!confirm(`Seguro que quieres ${action} ${user.username}?`)) return;
+    this.actionLoading.set(user.id);
     this.api.patch(`/admin/users/${user.id}/admin`, {}).subscribe({
       next: () => {
+        this.actionLoading.set(null);
         this.snackBar.open(`${user.username}: rol actualizado`, 'OK', { duration: 2000 });
         this.load(this.pagination().page, this.pagination().limit);
       },
-      error: () => this.snackBar.open('Error al cambiar rol', 'OK', { duration: 3000 }),
+      error: () => {
+        this.actionLoading.set(null);
+        this.snackBar.open('Error al cambiar rol', 'OK', { duration: 3000 });
+      },
     });
   }
 }

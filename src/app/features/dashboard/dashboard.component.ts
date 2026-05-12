@@ -107,6 +107,9 @@ interface Activity {
       <div class="chart-section">
         <h2>Crecimiento (ultimos 30 dias)</h2>
         <div class="chart-container">
+          @if (chartLoading()) {
+            <div class="loading"><mat-spinner diameter="32" /></div>
+          }
           <canvas #growthCanvas></canvas>
         </div>
       </div>
@@ -117,6 +120,7 @@ export class DashboardComponent implements OnInit {
   @ViewChild('growthCanvas') growthCanvas!: ElementRef<HTMLCanvasElement>;
   private readonly api = inject(HttpApiService);
   loading = signal(true);
+  chartLoading = signal(true);
   metrics = signal<{ label: string; value: number }[]>([]);
   activityCards = signal<{ label: string; value: number }[]>([]);
 
@@ -149,7 +153,9 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadGrowthChart() {
+    this.chartLoading.set(true);
     this.api.get<GrowthPoint[]>('/admin/dashboard/growth', { days: '30' }).subscribe((data) => {
+      this.chartLoading.set(false);
       if (!this.growthCanvas) return;
       const ctx = this.growthCanvas.nativeElement.getContext('2d');
       if (!ctx) return;

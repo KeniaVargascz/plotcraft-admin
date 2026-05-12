@@ -163,22 +163,22 @@ interface UserDetail {
         </div>
         <div class="actions">
           @if (user()!.status !== 'ACTIVE') {
-            <button mat-stroked-button color="primary" (click)="changeStatus('ACTIVE')">
-              <mat-icon>check_circle</mat-icon> Activar
+            <button mat-stroked-button color="primary" (click)="changeStatus('ACTIVE')" [disabled]="actionLoading()">
+              @if (actionLoading() === 'ACTIVE') { <mat-spinner diameter="18" /> } @else { <mat-icon>check_circle</mat-icon> } Activar
             </button>
           }
           @if (user()!.status !== 'SUSPENDED') {
-            <button mat-stroked-button color="warn" (click)="changeStatus('SUSPENDED')">
-              <mat-icon>pause_circle</mat-icon> Suspender
+            <button mat-stroked-button color="warn" (click)="changeStatus('SUSPENDED')" [disabled]="actionLoading()">
+              @if (actionLoading() === 'SUSPENDED') { <mat-spinner diameter="18" /> } @else { <mat-icon>pause_circle</mat-icon> } Suspender
             </button>
           }
           @if (user()!.status !== 'BANNED') {
-            <button mat-stroked-button color="warn" (click)="changeStatus('BANNED')">
-              <mat-icon>block</mat-icon> Banear
+            <button mat-stroked-button color="warn" (click)="changeStatus('BANNED')" [disabled]="actionLoading()">
+              @if (actionLoading() === 'BANNED') { <mat-spinner diameter="18" /> } @else { <mat-icon>block</mat-icon> } Banear
             </button>
           }
-          <button mat-stroked-button (click)="toggleAdmin()">
-            <mat-icon>admin_panel_settings</mat-icon>
+          <button mat-stroked-button (click)="toggleAdmin()" [disabled]="actionLoading()">
+            @if (actionLoading() === 'ADMIN') { <mat-spinner diameter="18" /> } @else { <mat-icon>admin_panel_settings</mat-icon> }
             {{ user()!.role === 'ADMIN' ? 'Quitar Admin' : 'Hacer Admin' }}
           </button>
         </div>
@@ -196,6 +196,7 @@ export class UserDetailDialogComponent {
   private readonly data: { userId: string } = inject(MAT_DIALOG_DATA);
 
   loading = signal(true);
+  actionLoading = signal<string | null>(null);
   user = signal<UserDetail | null>(null);
 
   ngOnInit() {
@@ -215,25 +216,35 @@ export class UserDetailDialogComponent {
     const reason = status === 'BANNED' || status === 'SUSPENDED'
       ? prompt('Razon (opcional):') ?? ''
       : '';
+    this.actionLoading.set(status);
     this.api.patch(`/admin/users/${this.data.userId}/status`, { status, reason }).subscribe({
       next: () => {
+        this.actionLoading.set(null);
         this.user.update((u) => u ? { ...u, status } : u);
         this.snackBar.open(`Estado cambiado a ${status}`, 'OK', { duration: 2000 });
         this.dialogRef.close({ changed: true });
       },
-      error: () => this.snackBar.open('Error al cambiar estado', 'OK', { duration: 3000 }),
+      error: () => {
+        this.actionLoading.set(null);
+        this.snackBar.open('Error al cambiar estado', 'OK', { duration: 3000 });
+      },
     });
   }
 
   toggleAdmin() {
+    this.actionLoading.set('ADMIN');
     this.api.patch(`/admin/users/${this.data.userId}/admin`, {}).subscribe({
       next: () => {
+        this.actionLoading.set(null);
         const newRole = this.user()!.role === 'ADMIN' ? 'USER' : 'ADMIN';
         this.user.update((u) => u ? { ...u, role: newRole } : u);
         this.snackBar.open(`Rol cambiado a ${newRole}`, 'OK', { duration: 2000 });
         this.dialogRef.close({ changed: true });
       },
-      error: () => this.snackBar.open('Error al cambiar rol', 'OK', { duration: 3000 }),
+      error: () => {
+        this.actionLoading.set(null);
+        this.snackBar.open('Error al cambiar rol', 'OK', { duration: 3000 });
+      },
     });
   }
 }
