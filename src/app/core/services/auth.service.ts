@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, map } from 'rxjs';
+import { Observable, tap, map, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 interface AdminUser {
@@ -87,6 +87,27 @@ export class AuthService {
           localStorage.setItem(this.REFRESH_KEY, res.refreshToken);
           this.currentUser.set(res.user);
         }),
+      );
+  }
+
+  refreshToken(): Observable<string> {
+    const refreshToken = localStorage.getItem(this.REFRESH_KEY);
+    if (!refreshToken) {
+      return throwError(() => new Error('No refresh token'));
+    }
+
+    return this.http
+      .post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
+        `${environment.apiUrl}/auth/refresh`,
+        { refreshToken },
+      )
+      .pipe(
+        map((r) => r.data),
+        tap((res) => {
+          localStorage.setItem(this.TOKEN_KEY, res.accessToken);
+          localStorage.setItem(this.REFRESH_KEY, res.refreshToken);
+        }),
+        map((res) => res.accessToken),
       );
   }
 
