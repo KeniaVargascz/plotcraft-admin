@@ -314,6 +314,9 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
               <button type="button" class="channel-btn" [class.active]="otpChannel() === 'sms'" (click)="otpChannel.set('sms')">SMS</button>
               <button type="button" class="channel-btn" [class.active]="otpChannel() === 'whatsapp'" (click)="otpChannel.set('whatsapp')">WhatsApp</button>
               <button type="button" class="channel-btn" [class.active]="otpChannel() === 'email'" (click)="otpChannel.set('email')">Email</button>
+              @if (tfaEnabled()) {
+                <button type="button" class="channel-btn" [class.active]="otpChannel() === 'totp'" (click)="otpChannel.set('totp')">Authenticator</button>
+              }
             </div>
             <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
               @if (loading()) { <mat-spinner diameter="20" /> } @else { Enviar codigo }
@@ -325,7 +328,13 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
         } @else if (step() === 'otp') {
           <form class="form-stack" (ngSubmit)="onVerifyOtp()">
             <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">lock</mat-icon> Codigo OTP</div>
-            <p class="info-text">Ingresa el codigo de 6 digitos enviado a tu {{ otpChannel() === 'email' ? 'correo electronico' : 'telefono' }}</p>
+            <p class="info-text">
+              @if (otpChannel() === 'totp') {
+                Ingresa el codigo de 6 digitos de tu app de autenticacion
+              } @else {
+                Ingresa el codigo de 6 digitos enviado a tu {{ otpChannel() === 'email' ? 'correo electronico' : 'telefono' }}
+              }
+            </p>
             <mat-form-field appearance="outline">
               <mat-label>Codigo OTP</mat-label>
               <input matInput [(ngModel)]="otpCode" name="otpCode" required maxlength="6" autocomplete="one-time-code" />
@@ -334,15 +343,17 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
               @if (loading()) { <mat-spinner diameter="20" /> } @else { Verificar }
             </button>
             @if (error()) { <p class="error-msg">{{ error() }}</p> }
-            <div class="resend-link">
-              <a (click)="onResendOtp()" [class.disabled]="resendCooldown() > 0">
-                @if (resendCooldown() > 0) {
-                  Reenviar en {{ resendCooldown() }}s
-                } @else {
-                  Reenviar codigo
-                }
-              </a>
-            </div>
+            @if (otpChannel() !== 'totp') {
+              <div class="resend-link">
+                <a (click)="onResendOtp()" [class.disabled]="resendCooldown() > 0">
+                  @if (resendCooldown() > 0) {
+                    Reenviar en {{ resendCooldown() }}s
+                  } @else {
+                    Reenviar codigo
+                  }
+                </a>
+              </div>
+            }
             <div class="back-link"><a (click)="resetToLogin()">Volver al login</a></div>
           </form>
 
@@ -414,7 +425,8 @@ export class LoginComponent {
   phoneLocal = '';
 
   // OTP
-  otpChannel = signal<'sms' | 'whatsapp' | 'email'>('sms');
+  otpChannel = signal<'sms' | 'whatsapp' | 'email' | 'totp'>('sms');
+  tfaEnabled = signal(false);
   otpCode = '';
   resendCooldown = signal(0);
   private resendTimer: ReturnType<typeof setInterval> | null = null;
@@ -436,6 +448,7 @@ export class LoginComponent {
       next: (res) => {
         this.loading.set(false);
         this.tfaToken = res.tfaToken;
+        this.tfaEnabled.set(res.tfaEnabled);
         if (res.phoneRequired) {
           this.step.set('phone');
         } else {
@@ -487,7 +500,7 @@ export class LoginComponent {
   onVerifyOtp() {
     this.loading.set(true);
     this.error.set('');
-    this.auth.verifyOtp(this.tfaToken, this.otpCode).subscribe({
+    this.auth.verifyOtp(this.tfaToken, this.otpCode, this.otpChannel()).subscribe({
       next: () => {
         this.loading.set(false);
         this.router.navigate(['/dashboard']);

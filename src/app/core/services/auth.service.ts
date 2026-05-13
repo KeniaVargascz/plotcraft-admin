@@ -47,9 +47,9 @@ export class AuthService {
     }
   }
 
-  login(email: string, password: string): Observable<{ phoneRequired: boolean; tfaToken: string }> {
+  login(email: string, password: string): Observable<{ phoneRequired: boolean; tfaEnabled: boolean; tfaToken: string }> {
     return this.http
-      .post<ApiResponse<{ phoneRequired: boolean; tfaToken: string }>>(
+      .post<ApiResponse<{ phoneRequired: boolean; tfaEnabled: boolean; tfaToken: string }>>(
         `${environment.apiUrl}/admin/auth/login`,
         { email, password },
       )
@@ -65,7 +65,7 @@ export class AuthService {
       .pipe(map((r) => r.data));
   }
 
-  sendOtp(tfaToken: string, channel: 'sms' | 'whatsapp' | 'email'): Observable<{ sent: boolean }> {
+  sendOtp(tfaToken: string, channel: 'sms' | 'whatsapp' | 'email' | 'totp'): Observable<{ sent: boolean }> {
     return this.http
       .post<ApiResponse<{ sent: boolean }>>(
         `${environment.apiUrl}/admin/auth/send-otp`,
@@ -74,11 +74,11 @@ export class AuthService {
       .pipe(map((r) => r.data));
   }
 
-  verifyOtp(tfaToken: string, code: string): Observable<LoginResponse> {
+  verifyOtp(tfaToken: string, code: string, channel?: string): Observable<LoginResponse> {
     return this.http
       .post<ApiResponse<LoginResponse>>(
         `${environment.apiUrl}/admin/auth/verify-otp`,
-        { tfaToken, code },
+        { tfaToken, code, channel },
       )
       .pipe(
         map((r) => r.data),
