@@ -47,9 +47,9 @@ export class AuthService {
     }
   }
 
-  login(email: string, password: string): Observable<{ phoneRequired: boolean; tfaEnabled: boolean; tfaToken: string }> {
+  login(email: string, password: string): Observable<{ phoneRequired: boolean; tfaEnabled: boolean; allowedChannels: string[]; tfaToken: string }> {
     return this.http
-      .post<ApiResponse<{ phoneRequired: boolean; tfaEnabled: boolean; tfaToken: string }>>(
+      .post<ApiResponse<{ phoneRequired: boolean; tfaEnabled: boolean; allowedChannels: string[]; tfaToken: string }>>(
         `${environment.apiUrl}/admin/auth/login`,
         { email, password },
       )

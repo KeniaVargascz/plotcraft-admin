@@ -311,10 +311,16 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
             <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">sms</mat-icon> Verificacion</div>
             <p class="info-text">Selecciona como recibir tu codigo de verificacion</p>
             <div class="channel-toggle">
-              <button type="button" class="channel-btn" [class.active]="otpChannel() === 'sms'" (click)="otpChannel.set('sms')">SMS</button>
-              <button type="button" class="channel-btn" [class.active]="otpChannel() === 'whatsapp'" (click)="otpChannel.set('whatsapp')">WhatsApp</button>
-              <button type="button" class="channel-btn" [class.active]="otpChannel() === 'email'" (click)="otpChannel.set('email')">Email</button>
-              @if (tfaEnabled()) {
+              @if (allowedChannels().includes('sms')) {
+                <button type="button" class="channel-btn" [class.active]="otpChannel() === 'sms'" (click)="otpChannel.set('sms')">SMS</button>
+              }
+              @if (allowedChannels().includes('whatsapp')) {
+                <button type="button" class="channel-btn" [class.active]="otpChannel() === 'whatsapp'" (click)="otpChannel.set('whatsapp')">WhatsApp</button>
+              }
+              @if (allowedChannels().includes('email')) {
+                <button type="button" class="channel-btn" [class.active]="otpChannel() === 'email'" (click)="otpChannel.set('email')">Email</button>
+              }
+              @if (allowedChannels().includes('totp') && tfaEnabled()) {
                 <button type="button" class="channel-btn" [class.active]="otpChannel() === 'totp'" (click)="otpChannel.set('totp')">Authenticator</button>
               }
             </div>
@@ -427,6 +433,7 @@ export class LoginComponent {
   // OTP
   otpChannel = signal<'sms' | 'whatsapp' | 'email' | 'totp'>('sms');
   tfaEnabled = signal(false);
+  allowedChannels = signal<string[]>(['sms', 'whatsapp', 'email']);
   otpCode = '';
   resendCooldown = signal(0);
   private resendTimer: ReturnType<typeof setInterval> | null = null;
@@ -449,6 +456,10 @@ export class LoginComponent {
         this.loading.set(false);
         this.tfaToken = res.tfaToken;
         this.tfaEnabled.set(res.tfaEnabled);
+        this.allowedChannels.set(res.allowedChannels);
+        // Default to first allowed channel
+        const defaultChannel = res.allowedChannels[0] as any;
+        if (defaultChannel) this.otpChannel.set(defaultChannel);
         if (res.phoneRequired) {
           this.step.set('phone');
         } else {
