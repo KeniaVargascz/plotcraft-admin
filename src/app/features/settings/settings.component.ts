@@ -221,13 +221,26 @@ interface SettingsForm {
                 <mat-label>Nueva contrasena</mat-label>
                 <input matInput type="password" [(ngModel)]="changeForm.newPassword" />
               </mat-form-field>
-              <mat-form-field appearance="outline">
-                <mat-label>Codigo 2FA</mat-label>
-                <input matInput [(ngModel)]="changeForm.tfaCode" maxlength="6" />
-              </mat-form-field>
-              <button mat-flat-button class="save-btn" (click)="changePassword()" [disabled]="changeSaving()">
-                @if (changeSaving()) { <mat-spinner diameter="20" /> } @else { Cambiar contrasena }
-              </button>
+
+              @if (!changeCodeSent()) {
+                <div class="section-title" style="font-size:0.85rem;margin-top:0.5rem">Enviar codigo de verificacion via:</div>
+                <div class="channel-toggle" style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap">
+                  <button mat-stroked-button (click)="sendChangeCode('email')" [disabled]="changeSaving()">Email</button>
+                  <button mat-stroked-button (click)="sendChangeCode('sms')" [disabled]="changeSaving()">SMS</button>
+                  <button mat-stroked-button (click)="sendChangeCode('whatsapp')" [disabled]="changeSaving()">WhatsApp</button>
+                  @if (tfaEnabled()) {
+                    <button mat-stroked-button (click)="sendChangeCode('totp')" [disabled]="changeSaving()">Authenticator</button>
+                  }
+                </div>
+              } @else {
+                <mat-form-field appearance="outline">
+                  <mat-label>Codigo de verificacion</mat-label>
+                  <input matInput [(ngModel)]="changeForm.code" maxlength="6" />
+                </mat-form-field>
+                <button mat-flat-button class="save-btn" (click)="changePassword()" [disabled]="changeSaving()">
+                  @if (changeSaving()) { <mat-spinner diameter="20" /> } @else { Cambiar contrasena }
+                </button>
+              }
             </div>
           </mat-card-content>
         </mat-card>
@@ -423,15 +436,35 @@ export class SettingsComponent implements OnInit {
   }
 
   // Change password
-  changeForm = { currentPassword: '', newPassword: '', tfaCode: '' };
+  changeForm = { currentPassword: '', newPassword: '', code: '', channel: '' };
   changeSaving = signal(false);
+  changeCodeSent = signal(false);
+
+  sendChangeCode(channel: string) {
+    this.changeSaving.set(true);
+    this.api.post<{ sent: boolean }>('/admin/auth/change-password/send-code', { channel }).subscribe({
+      next: () => {
+        this.changeSaving.set(false);
+        this.changeForm.channel = channel;
+        this.changeCodeSent.set(true);
+        if (channel !== 'totp') {
+          this.snackBar.open('Codigo enviado', 'OK', { duration: 3000 });
+        }
+      },
+      error: (err) => {
+        this.changeSaving.set(false);
+        this.snackBar.open(err?.error?.error?.message || 'Error al enviar codigo', 'OK', { duration: 3000 });
+      },
+    });
+  }
 
   changePassword() {
     this.changeSaving.set(true);
     this.api.post<{ message: string }>('/admin/auth/change-password', this.changeForm).subscribe({
       next: () => {
         this.changeSaving.set(false);
-        this.changeForm = { currentPassword: '', newPassword: '', tfaCode: '' };
+        this.changeForm = { currentPassword: '', newPassword: '', code: '', channel: '' };
+        this.changeCodeSent.set(false);
         this.snackBar.open('Contrasena actualizada', 'OK', { duration: 3000 });
       },
       error: (err) => {
