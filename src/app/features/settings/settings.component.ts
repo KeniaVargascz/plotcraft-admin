@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { forkJoin, of } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -199,7 +200,7 @@ interface SettingsForm {
               </mat-form-field>
               @if (form.bannerHtml) {
                 <div class="preview-label">Vista previa:</div>
-                <div class="banner-preview" [innerHTML]="form.bannerHtml"></div>
+                <div class="banner-preview" [innerHTML]="sanitizedBanner()"></div>
               }
             </div>
           </mat-card-content>
@@ -327,6 +328,7 @@ interface SettingsForm {
 export class SettingsComponent implements OnInit {
   private readonly api = inject(HttpApiService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly sanitizer = inject(DomSanitizer);
 
   loading = signal(true);
   saving = signal(false);
@@ -346,6 +348,10 @@ export class SettingsComponent implements OnInit {
   };
 
   private originalSettings: Record<string, string> = {};
+
+  sanitizedBanner(): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(this.form.bannerHtml);
+  }
 
   ngOnInit() {
     this.loadTfaStatus();
