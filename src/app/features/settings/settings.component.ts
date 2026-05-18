@@ -29,6 +29,7 @@ interface SettingsForm {
   maxLimit: number;
   maintenanceMode: boolean;
   registrationEnabled: boolean;
+  registrationCopyEnabled: boolean;
   bannerEnabled: boolean;
   bannerHtml: string;
 }
@@ -105,6 +106,7 @@ interface SettingsForm {
       font-size: 0.88rem;
     }
     .preview-label { font-size: 0.75rem; color: #888; margin-bottom: 0.25rem; }
+    .hint-text { font-size: 0.75rem; color: #999; font-style: italic; margin-top: -0.25rem; }
   `],
   template: `
     <h1>Configuracion de la Plataforma</h1>
@@ -181,6 +183,11 @@ interface SettingsForm {
                 <span class="toggle-label">Registro habilitado</span>
                 <mat-slide-toggle [(ngModel)]="form.registrationEnabled" />
               </div>
+              <div class="toggle-row">
+                <span class="toggle-label">Copia de verificacion a correo admin</span>
+                <mat-slide-toggle [(ngModel)]="form.registrationCopyEnabled" />
+              </div>
+              <div class="hint-text">El correo destino solo se configura desde la base de datos</div>
             </div>
           </mat-card-content>
         </mat-card>
@@ -356,6 +363,7 @@ export class SettingsComponent implements OnInit {
     maxLimit: 100,
     maintenanceMode: false,
     registrationEnabled: true,
+    registrationCopyEnabled: false,
     bannerEnabled: false,
     bannerHtml: '',
   };
@@ -383,6 +391,7 @@ export class SettingsComponent implements OnInit {
       this.form.maintenanceMode = this.bool(map, 'maintenanceMode', false);
       this.form.bannerEnabled = this.bool(map, 'banner.enabled', false);
       this.form.bannerHtml = map['banner.html'] ?? '';
+      this.form.registrationCopyEnabled = this.bool(map, 'email.registration.copyEnabled', false);
 
       // Read registration state from the feature flag (source of truth)
       this.api.get<{ groups: Record<string, { key: string; enabled: boolean }[]> }>('/admin/features').subscribe((flags) => {
@@ -410,6 +419,7 @@ export class SettingsComponent implements OnInit {
       registrationEnabled: String(this.form.registrationEnabled),
       'banner.enabled': String(this.form.bannerEnabled),
       'banner.html': this.form.bannerHtml,
+      'email.registration.copyEnabled': String(this.form.registrationCopyEnabled),
     };
 
     forkJoin([
