@@ -1,6 +1,5 @@
-import { Component, inject, signal, ViewEncapsulation } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { Component, DestroyRef, inject, signal, ViewEncapsulation } from '@angular/core';
+import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,249 +9,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../core/services/auth.service';
-import { environment } from '../../../environments/environment';
 import { COUNTRY_CODES } from '../../core/constants/country-codes';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   encapsulation: ViewEncapsulation.None,
-  imports: [FormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule],
-  styles: [`
-    .login-shell .mat-mdc-form-field {
-      --mdc-outlined-text-field-outline-color: rgba(255,255,255,0.15);
-      --mdc-outlined-text-field-hover-outline-color: rgba(255,255,255,0.3);
-      --mdc-outlined-text-field-focus-outline-color: #c9a84c;
-      --mdc-outlined-text-field-label-text-color: rgba(255,255,255,0.55);
-      --mdc-outlined-text-field-focus-label-text-color: #c9a84c;
-      --mdc-outlined-text-field-input-text-color: #e8e8f0;
-      --mdc-outlined-text-field-caret-color: #c9a84c;
-      --mdc-outlined-text-field-disabled-input-text-color: rgba(255,255,255,0.35);
-      --mdc-outlined-text-field-disabled-label-text-color: rgba(255,255,255,0.3);
-      --mdc-outlined-text-field-container-shape: 0.75rem;
-    }
-    .login-shell .mat-mdc-select {
-      --mat-select-enabled-trigger-text-color: #e8e8f0;
-      --mat-select-trigger-text-color: #e8e8f0;
-      --mat-select-placeholder-text-color: rgba(255,255,255,0.55);
-      --mat-select-enabled-arrow-color: rgba(255,255,255,0.55);
-      --mat-select-focused-arrow-color: #c9a84c;
-    }
-    .login-shell .mat-mdc-select-value-text {
-      color: #e8e8f0 !important;
-    }
-    .login-shell .mat-mdc-select-trigger .mat-mdc-select-value {
-      color: #e8e8f0 !important;
-    }
-    .login-shell .mat-mdc-icon-button {
-      --mdc-icon-button-icon-color: rgba(255,255,255,0.55);
-    }
-    .login-shell .mdc-floating-label {
-      color: rgba(255,255,255,0.55) !important;
-    }
-    .login-shell .mdc-text-field--focused .mdc-floating-label {
-      color: #c9a84c !important;
-    }
-    .login-shell .mdc-notched-outline__leading,
-    .login-shell .mdc-notched-outline__notch,
-    .login-shell .mdc-notched-outline__trailing {
-      border-color: rgba(255,255,255,0.15) !important;
-    }
-    .login-shell .mdc-notched-outline__leading {
-      border-radius: 0.75rem 0 0 0.75rem !important;
-      width: 0.75rem !important;
-    }
-    .login-shell .mdc-notched-outline__trailing {
-      border-radius: 0 0.75rem 0.75rem 0 !important;
-    }
-    .login-shell .mdc-notched-outline__notch {
-      border-left: none !important;
-    }
-    .login-shell .mdc-text-field--focused .mdc-notched-outline__leading,
-    .login-shell .mdc-text-field--focused .mdc-notched-outline__notch,
-    .login-shell .mdc-text-field--focused .mdc-notched-outline__trailing {
-      border-color: #c9a84c !important;
-    }
-    .login-shell .mat-mdc-input-element {
-      color: #e8e8f0 !important;
-    }
-    .login-shell input:-webkit-autofill,
-    .login-shell input:-webkit-autofill:hover,
-    .login-shell input:-webkit-autofill:focus {
-      -webkit-text-fill-color: #e8e8f0 !important;
-      -webkit-box-shadow: 0 0 0 1000px #1a1a2e inset !important;
-      box-shadow: 0 0 0 1000px #1a1a2e inset !important;
-      transition: background-color 5000s ease-in-out 0s;
-    }
-
-    .login-shell {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: var(--login-bg);
-      padding: 1rem;
-    }
-
-    .login-card {
-      width: min(460px, 92vw);
-      padding: 2.5rem 2rem;
-      border-radius: 1.25rem;
-      background: var(--login-surface);
-      border: 1px solid var(--login-border);
-      overflow: hidden;
-    }
-
-    .logo {
-      text-align: center;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--admin-accent);
-      margin-bottom: 0.25rem;
-    }
-
-    .logo-sub {
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--login-text-secondary);
-      margin-bottom: 2rem;
-      letter-spacing: 0.03em;
-    }
-
-    .form-stack { display: grid; gap: 1rem; }
-
-    .error-msg {
-      color: #ef5350;
-      font-size: 0.85rem;
-      text-align: center;
-      margin-top: 0.25rem;
-      padding: 0.5rem;
-      background: rgba(239,83,80,0.08);
-      border-radius: 0.5rem;
-    }
-
-    mat-form-field { width: 100%; }
-
-    .submit-btn {
-      width: 100%;
-      height: 46px;
-      background: var(--admin-accent) !important;
-      color: var(--login-surface) !important;
-      font-weight: 600;
-      font-size: 0.95rem;
-      border-radius: 0.75rem;
-      letter-spacing: 0.02em;
-      transition: background 0.15s;
-    }
-    .submit-btn:hover:not([disabled]) {
-      background: var(--admin-accent-hover) !important;
-    }
-
-    .info-text {
-      text-align: center;
-      color: var(--login-text-secondary);
-      font-size: 0.85rem;
-      line-height: 1.5;
-      margin-bottom: 0.75rem;
-    }
-
-    .back-link {
-      text-align: center;
-      margin-top: 1rem;
-    }
-    .back-link a {
-      color: var(--login-text-secondary);
-      font-size: 0.85rem;
-      cursor: pointer;
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    .back-link a:hover { color: var(--login-text); }
-
-    .forgot-link { text-align: center; margin-top: 0.75rem; }
-    .forgot-link a {
-      color: var(--admin-accent);
-      font-size: 0.85rem;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .forgot-link a:hover { text-decoration: underline; }
-
-    .channel-toggle {
-      display: flex;
-      justify-content: center;
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-    }
-    .channel-btn {
-      padding: 0.5rem 1.25rem;
-      border-radius: 0.5rem;
-      border: 1px solid var(--login-border);
-      background: transparent;
-      color: var(--login-text-secondary);
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-family: inherit;
-      transition: all 0.15s;
-    }
-    .channel-btn:hover {
-      border-color: var(--login-border-hover);
-      color: var(--login-text);
-    }
-    .channel-btn.active {
-      border-color: var(--admin-accent);
-      color: var(--admin-accent);
-      background: var(--admin-accent-bg);
-    }
-
-    .success-msg {
-      color: #66bb6a;
-      font-size: 0.85rem;
-      text-align: center;
-      margin-top: 0.25rem;
-      padding: 0.5rem;
-      background: rgba(102,187,106,0.08);
-      border-radius: 0.5rem;
-    }
-
-    .phone-row {
-      display: flex;
-      gap: 0.5rem;
-    }
-    .phone-row .country-code {
-      width: 145px;
-      flex-shrink: 0;
-    }
-    .phone-row .local-number { flex: 1; min-width: 0; }
-
-    .step-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      font-size: 0.75rem;
-      color: var(--admin-accent);
-      background: var(--admin-accent-bg);
-      padding: 0.25rem 0.75rem;
-      border-radius: 1rem;
-      margin: 0 auto 1rem;
-      width: fit-content;
-    }
-
-    .resend-link {
-      text-align: center;
-      margin-top: 0.5rem;
-    }
-    .resend-link a {
-      color: var(--admin-accent);
-      font-size: 0.85rem;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .resend-link a:hover { text-decoration: underline; }
-    .resend-link a.disabled {
-      color: var(--login-text-secondary);
-      pointer-events: none;
-    }
-  `],
+  imports: [FormsModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule],
+  styleUrl: './login.component.scss',
   template: `
     <div class="login-shell">
       <div class="login-card">
@@ -260,19 +24,27 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
         <div class="logo-sub">Panel de Administracion</div>
 
         @if (step() === 'login') {
-          <form class="form-stack" (ngSubmit)="onLogin()">
+          <form class="form-stack" [formGroup]="loginForm" (ngSubmit)="onLogin()">
             <mat-form-field appearance="outline">
               <mat-label>Email</mat-label>
-              <input matInput type="email" [(ngModel)]="email" name="email" required />
+              <input matInput type="email" formControlName="email" />
+              @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('required')) {
+                <mat-error>El email es obligatorio</mat-error>
+              } @else if (loginForm.controls.email.touched && loginForm.controls.email.hasError('email')) {
+                <mat-error>Ingresa un email valido</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Contrasena</mat-label>
-              <input matInput [type]="showPass() ? 'text' : 'password'" [(ngModel)]="password" name="password" required />
+              <input matInput [type]="showPass() ? 'text' : 'password'" formControlName="password" />
               <button mat-icon-button matSuffix type="button" (click)="showPass.set(!showPass())">
                 <mat-icon>{{ showPass() ? 'visibility_off' : 'visibility' }}</mat-icon>
               </button>
+              @if (loginForm.controls.password.touched && loginForm.controls.password.hasError('required')) {
+                <mat-error>La contrasena es obligatoria</mat-error>
+              }
             </mat-form-field>
-            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
+            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || loginForm.invalid || rateLimitCountdown() > 0">
               @if (loading()) { <mat-spinner diameter="20" /> } @else { Iniciar sesion }
             </button>
             @if (error()) { <p class="error-msg">{{ error() }}</p> }
@@ -282,13 +54,13 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
           </form>
 
         } @else if (step() === 'phone') {
-          <form class="form-stack" (ngSubmit)="onRegisterPhone()">
+          <form class="form-stack" [formGroup]="phoneForm" (ngSubmit)="onRegisterPhone()">
             <div class="step-badge"><mat-icon style="font-size:14px;width:14px;height:14px">phone</mat-icon> Registro de telefono</div>
             <p class="info-text">Registra tu numero de telefono para recibir codigos de verificacion</p>
             <div class="phone-row">
               <mat-form-field appearance="outline" class="country-code">
                 <mat-label>Lada</mat-label>
-                <mat-select [(ngModel)]="phoneCountryCode" name="countryCode" panelClass="login-lada-panel">
+                <mat-select formControlName="countryCode" panelClass="login-lada-panel">
                   @for (c of countryCodes; track c.code) {
                     <mat-option [value]="c.code">{{ c.flag }} {{ c.code }}</mat-option>
                   }
@@ -296,10 +68,15 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
               </mat-form-field>
               <mat-form-field appearance="outline" class="local-number">
                 <mat-label>Numero local</mat-label>
-                <input matInput [(ngModel)]="phoneLocal" name="phone" required placeholder="1234567890" />
+                <input matInput formControlName="phoneLocal" placeholder="1234567890" />
+                @if (phoneForm.controls.phoneLocal.touched && phoneForm.controls.phoneLocal.hasError('required')) {
+                  <mat-error>El numero es obligatorio</mat-error>
+                } @else if (phoneForm.controls.phoneLocal.touched && phoneForm.controls.phoneLocal.hasError('pattern')) {
+                  <mat-error>Solo digitos (7-15 caracteres)</mat-error>
+                }
               </mat-form-field>
             </div>
-            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || !phoneLocal">
+            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || phoneForm.invalid">
               @if (loading()) { <mat-spinner diameter="20" /> } @else { Continuar }
             </button>
             @if (error()) { <p class="error-msg">{{ error() }}</p> }
@@ -364,17 +141,22 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
           </form>
 
         } @else if (step() === 'forgot') {
-          <form class="form-stack" (ngSubmit)="onForgotPassword()">
+          <form class="form-stack" [formGroup]="forgotForm" (ngSubmit)="onForgotPassword()">
             <p class="info-text">Ingresa tu email de administrador para recibir un codigo de recuperacion por SMS, WhatsApp o correo electronico</p>
             <mat-form-field appearance="outline">
               <mat-label>Email</mat-label>
-              <input matInput type="email" [(ngModel)]="forgotEmail" name="forgotEmail" required />
+              <input matInput type="email" formControlName="email" />
+              @if (forgotForm.controls.email.touched && forgotForm.controls.email.hasError('required')) {
+                <mat-error>El email es obligatorio</mat-error>
+              } @else if (forgotForm.controls.email.touched && forgotForm.controls.email.hasError('email')) {
+                <mat-error>Ingresa un email valido</mat-error>
+              }
             </mat-form-field>
             <div class="channel-toggle">
               <button type="button" class="channel-btn" [class.active]="forgotChannel() === 'sms'" (click)="forgotChannel.set('sms')">SMS</button>
               <button type="button" class="channel-btn" [class.active]="forgotChannel() === 'whatsapp'" (click)="forgotChannel.set('whatsapp')">WhatsApp</button>
             </div>
-            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
+            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || forgotForm.invalid">
               @if (loading()) { <mat-spinner diameter="20" /> } @else { Enviar codigo }
             </button>
             @if (forgotSent()) {
@@ -391,17 +173,29 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
           </form>
 
         } @else if (step() === 'reset') {
-          <form class="form-stack" (ngSubmit)="onResetPassword()">
+          <form class="form-stack" [formGroup]="resetForm" (ngSubmit)="onResetPassword()">
             <p class="info-text">Ingresa el codigo recibido y tu nueva contrasena</p>
             <mat-form-field appearance="outline">
               <mat-label>Codigo OTP</mat-label>
-              <input matInput [(ngModel)]="resetCode" name="resetCode" maxlength="6" required />
+              <input matInput formControlName="code" maxlength="6" />
+              @if (resetForm.controls.code.touched && resetForm.controls.code.hasError('required')) {
+                <mat-error>El codigo es obligatorio</mat-error>
+              } @else if (resetForm.controls.code.touched && resetForm.controls.code.hasError('pattern')) {
+                <mat-error>Debe ser un codigo de 6 digitos</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Nueva contrasena</mat-label>
-              <input matInput type="password" [(ngModel)]="resetNewPassword" name="resetNewPassword" required />
+              <input matInput type="password" formControlName="newPassword" />
+              @if (resetForm.controls.newPassword.touched && resetForm.controls.newPassword.hasError('required')) {
+                <mat-error>La contrasena es obligatoria</mat-error>
+              } @else if (resetForm.controls.newPassword.touched && resetForm.controls.newPassword.hasError('minlength')) {
+                <mat-error>Minimo 8 caracteres</mat-error>
+              } @else if (resetForm.controls.newPassword.touched && resetForm.controls.newPassword.hasError('pattern')) {
+                <mat-error>Debe incluir mayuscula, minuscula, numero y caracter especial</mat-error>
+              }
             </mat-form-field>
-            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading()">
+            <button mat-flat-button class="submit-btn" type="submit" [disabled]="loading() || resetForm.invalid">
               @if (loading()) { <mat-spinner diameter="20" /> } @else { Restablecer contrasena }
             </button>
             @if (error()) { <p class="error-msg">{{ error() }}</p> }
@@ -415,20 +209,45 @@ import { COUNTRY_CODES } from '../../core/constants/country-codes';
 export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly http = inject(HttpClient);
+  private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
-  // Login
-  email = '';
-  password = '';
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.clearResendTimer();
+      if (this.rateLimitTimer) { clearInterval(this.rateLimitTimer); this.rateLimitTimer = null; }
+    });
+  }
+
   loading = signal(false);
   error = signal('');
   showPass = signal(false);
   step = signal<'login' | 'phone' | 'send-otp' | 'otp' | 'forgot' | 'reset'>('login');
+  rateLimitCountdown = signal(0);
+  private rateLimitTimer: ReturnType<typeof setInterval> | null = null;
+
+  // Reactive forms
+  readonly loginForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required]],
+  });
+
+  readonly phoneForm = this.fb.nonNullable.group({
+    countryCode: ['+52'],
+    phoneLocal: ['', [Validators.required, Validators.pattern(/^\d{7,15}$/)]],
+  });
+
+  readonly forgotForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+  });
+
+  readonly resetForm = this.fb.nonNullable.group({
+    code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
+    newPassword: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/)]],
+  });
 
   // Phone registration
   readonly countryCodes = COUNTRY_CODES;
-  phoneCountryCode = '+52';
-  phoneLocal = '';
 
   // OTP
   otpChannel = signal<'sms' | 'whatsapp' | 'email' | 'totp'>('sms');
@@ -437,21 +256,33 @@ export class LoginComponent {
   otpCode = '';
   resendCooldown = signal(0);
   private resendTimer: ReturnType<typeof setInterval> | null = null;
-  private tfaToken = '';
+  private readonly TFA_TOKEN_KEY = 'admin_tfa_token';
+
+  private get tfaToken(): string {
+    return sessionStorage.getItem(this.TFA_TOKEN_KEY) ?? '';
+  }
+  private set tfaToken(value: string) {
+    if (value) {
+      sessionStorage.setItem(this.TFA_TOKEN_KEY, value);
+    } else {
+      sessionStorage.removeItem(this.TFA_TOKEN_KEY);
+    }
+  }
 
   // Forgot / Reset
-  forgotEmail = '';
   forgotChannel = signal<'sms' | 'whatsapp'>('sms');
   forgotSent = signal(false);
   forgotVia = signal<'email' | 'phone' | 'unknown'>('unknown');
-  resetCode = '';
-  resetNewPassword = '';
 
   // Step 1: Login
   onLogin() {
+    this.loginForm.markAllAsTouched();
+    if (this.loginForm.invalid) return;
+
     this.loading.set(true);
     this.error.set('');
-    this.auth.login(this.email, this.password).subscribe({
+    const { email, password } = this.loginForm.getRawValue();
+    this.auth.login(email, password).subscribe({
       next: (res) => {
         this.loading.set(false);
         this.tfaToken = res.tfaToken;
@@ -468,16 +299,25 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(err?.error?.error?.message || 'Error al iniciar sesion');
+        if (err?.status === 429) {
+          const retryAfter = parseInt(err.headers?.get?.('Retry-After') ?? '', 10);
+          this.startRateLimitCountdown(retryAfter > 0 ? retryAfter : 60);
+        } else {
+          this.error.set(err?.error?.error?.message || 'Error al iniciar sesion');
+        }
       },
     });
   }
 
   // Step 2 (optional): Register phone
   onRegisterPhone() {
+    this.phoneForm.markAllAsTouched();
+    if (this.phoneForm.invalid) return;
+
     this.loading.set(true);
     this.error.set('');
-    const phone = this.phoneCountryCode + this.phoneLocal.replace(/\D/g, '');
+    const { countryCode, phoneLocal } = this.phoneForm.getRawValue();
+    const phone = countryCode + phoneLocal.replace(/\D/g, '');
     this.auth.registerPhone(this.tfaToken, phone).subscribe({
       next: () => {
         this.loading.set(false);
@@ -514,6 +354,7 @@ export class LoginComponent {
     this.auth.verifyOtp(this.tfaToken, this.otpCode, this.otpChannel()).subscribe({
       next: () => {
         this.loading.set(false);
+        this.tfaToken = '';
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
@@ -536,17 +377,18 @@ export class LoginComponent {
 
   // Forgot password
   onForgotPassword() {
+    this.forgotForm.markAllAsTouched();
+    if (this.forgotForm.invalid) return;
+
     this.loading.set(true);
     this.error.set('');
     this.forgotSent.set(false);
+    const { email } = this.forgotForm.getRawValue();
 
-    this.http.post<any>(`${environment.apiUrl}/admin/auth/forgot-password`, {
-      email: this.forgotEmail,
-      channel: this.forgotChannel(),
-    }).subscribe({
+    this.auth.forgotPassword(email, this.forgotChannel()).subscribe({
       next: (res) => {
         this.loading.set(false);
-        this.forgotVia.set(res?.data?.via || 'unknown');
+        this.forgotVia.set(res?.via ?? 'unknown');
         this.forgotSent.set(true);
         setTimeout(() => this.step.set('reset'), 2500);
       },
@@ -558,14 +400,15 @@ export class LoginComponent {
   }
 
   onResetPassword() {
+    this.resetForm.markAllAsTouched();
+    if (this.resetForm.invalid) return;
+
     this.loading.set(true);
     this.error.set('');
+    const { code, newPassword } = this.resetForm.getRawValue();
+    const { email } = this.forgotForm.getRawValue();
 
-    this.http.post<any>(`${environment.apiUrl}/admin/auth/reset-password`, {
-      email: this.forgotEmail,
-      code: this.resetCode,
-      newPassword: this.resetNewPassword,
-    }).subscribe({
+    this.auth.resetPassword(email, code, newPassword).subscribe({
       next: () => {
         this.loading.set(false);
         this.step.set('login');
@@ -581,14 +424,21 @@ export class LoginComponent {
     this.step.set('login');
     this.tfaToken = '';
     this.otpCode = '';
-    this.phoneLocal = '';
-    this.phoneCountryCode = '+52';
+    this.loginForm.reset();
+    this.phoneForm.reset({ countryCode: '+52', phoneLocal: '' });
+    this.forgotForm.reset();
+    this.resetForm.reset();
     this.error.set('');
+    this.forgotSent.set(false);
+    this.forgotVia.set('unknown');
+    this.rateLimitCountdown.set(0);
+    if (this.rateLimitTimer) { clearInterval(this.rateLimitTimer); this.rateLimitTimer = null; }
     this.clearResendTimer();
   }
 
   private handleTokenError(err: any): boolean {
     if (err?.error?.error?.code === 'TFA_TOKEN_INVALID') {
+      this.tfaToken = '';
       this.error.set('La sesion expiro. Inicia sesion de nuevo.');
       setTimeout(() => this.resetToLogin(), 2000);
       return true;
@@ -611,5 +461,23 @@ export class LoginComponent {
       clearInterval(this.resendTimer);
       this.resendTimer = null;
     }
+  }
+
+  private startRateLimitCountdown(seconds: number) {
+    this.rateLimitCountdown.set(seconds);
+    this.error.set(`Demasiados intentos. Reintenta en ${seconds}s`);
+    if (this.rateLimitTimer) clearInterval(this.rateLimitTimer);
+    this.rateLimitTimer = setInterval(() => {
+      const val = this.rateLimitCountdown() - 1;
+      if (val <= 0) {
+        this.rateLimitCountdown.set(0);
+        this.error.set('');
+        clearInterval(this.rateLimitTimer!);
+        this.rateLimitTimer = null;
+      } else {
+        this.rateLimitCountdown.set(val);
+        this.error.set(`Demasiados intentos. Reintenta en ${val}s`);
+      }
+    }, 1000);
   }
 }

@@ -15,9 +15,9 @@ const LOGIN_FLOW_PATHS = [
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
-  const token = localStorage.getItem('admin_access_token');
+  const token = authService.getToken();
 
-  if (token && token !== 'undefined' && token !== 'null') {
+  if (token) {
     req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
   }
 

@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, map, throwError } from 'rxjs';
+import { Observable, tap, map, throwError, timeout, catchError, of, firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 interface AdminUser {
@@ -33,18 +33,41 @@ export class AuthService {
   readonly currentUser = signal<AdminUser | null>(null);
   readonly isAuthenticated = computed(() => !!this.currentUser());
 
-  constructor(private http: HttpClient, private router: Router) {
-    this.loadUser();
+  readonly sessionReady = signal(false);
+
+  constructor(private http: HttpClient, private router: Router) {}
+
+  async initializeSession(): Promise<void> {
+    const token = this.getToken();
+    if (!token) {
+      this.sessionReady.set(true);
+      return;
+    }
+
+    try {
+      const user = await firstValueFrom(
+        this.me().pipe(
+          timeout(5000),
+          catchError(() => of(null)),
+        ),
+      );
+      if (user) {
+        this.currentUser.set(user);
+      } else {
+        this.clearTokens();
+      }
+    } catch {
+      this.clearTokens();
+    }
+
+    this.sessionReady.set(true);
   }
 
-  private loadUser() {
-    const token = this.getToken();
-    if (token) {
-      this.me().subscribe({
-        next: (user) => this.currentUser.set(user),
-        error: () => this.logout(),
-      });
-    }
+  private clearTokens() {
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_KEY);
+    sessionStorage.removeItem('admin_tfa_token');
+    this.currentUser.set(null);
   }
 
   login(email: string, password: string): Observable<{ phoneRequired: boolean; tfaEnabled: boolean; allowedChannels: string[]; tfaToken: string }> {
@@ -111,6 +134,24 @@ export class AuthService {
       );
   }
 
+  forgotPassword(email: string, channel: 'sms' | 'whatsapp'): Observable<{ via: 'email' | 'phone' | 'unknown' }> {
+    return this.http
+      .post<ApiResponse<{ via: 'email' | 'phone' | 'unknown' }>>(
+        `${environment.apiUrl}/admin/auth/forgot-password`,
+        { email, channel },
+      )
+      .pipe(map((r) => r.data));
+  }
+
+  resetPassword(email: string, code: string, newPassword: string): Observable<{ message: string }> {
+    return this.http
+      .post<ApiResponse<{ message: string }>>(
+        `${environment.apiUrl}/admin/auth/reset-password`,
+        { email, code, newPassword },
+      )
+      .pipe(map((r) => r.data));
+  }
+
   me(): Observable<AdminUser> {
     return this.http
       .get<ApiResponse<AdminUser>>(`${environment.apiUrl}/admin/auth/me`)
@@ -118,9 +159,7 @@ export class AuthService {
   }
 
   logout() {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_KEY);
-    this.currentUser.set(null);
+    this.clearTokens();
     this.router.navigate(['/login']);
   }
 
