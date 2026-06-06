@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,7 +12,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { HttpApiService } from '../../core/services/http-api.service';
+import { ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult } from '../../shared/confirm-dialog.component';
 
 interface Novel {
   id: string;
@@ -48,9 +51,11 @@ interface NovelsResponse {
   imports: [
     DatePipe, FormsModule,
     MatTableModule, MatPaginatorModule, MatProgressSpinnerModule,
+    MatSortModule,
     MatChipsModule, MatIconModule, MatButtonModule,
     MatInputModule, MatFormFieldModule, MatMenuModule,
     MatSnackBarModule,
+    MatDialogModule,
   ],
   styles: [`
     h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #1a1a2e; }
@@ -104,39 +109,39 @@ interface NovelsResponse {
       <div class="loading"><mat-spinner /></div>
     } @else {
       <div class="table-container">
-        <table mat-table [dataSource]="novels()">
+        <table mat-table [dataSource]="novels()" matSort (matSortChange)="onSort($event)">
           <ng-container matColumnDef="title">
-            <th mat-header-cell *matHeaderCellDef>Titulo</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Titulo</th>
             <td mat-cell *matCellDef="let n">{{ n.title }}</td>
           </ng-container>
           <ng-container matColumnDef="author">
-            <th mat-header-cell *matHeaderCellDef>Autor</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Autor</th>
             <td mat-cell *matCellDef="let n">{{ n.author.username }}</td>
           </ng-container>
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
             <td mat-cell *matCellDef="let n">
               <mat-chip class="chip-status">{{ n.status }}</mat-chip>
             </td>
           </ng-container>
           <ng-container matColumnDef="rating">
-            <th mat-header-cell *matHeaderCellDef>Rating</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Rating</th>
             <td mat-cell *matCellDef="let n">{{ n.rating }}</td>
           </ng-container>
           <ng-container matColumnDef="chaptersCount">
-            <th mat-header-cell *matHeaderCellDef>Capitulos</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Capitulos</th>
             <td mat-cell *matCellDef="let n">{{ n.chaptersCount }}</td>
           </ng-container>
           <ng-container matColumnDef="views">
-            <th mat-header-cell *matHeaderCellDef>Vistas</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Vistas</th>
             <td mat-cell *matCellDef="let n">{{ n.views }}</td>
           </ng-container>
           <ng-container matColumnDef="kudos">
-            <th mat-header-cell *matHeaderCellDef>Kudos</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Kudos</th>
             <td mat-cell *matCellDef="let n">{{ n.kudos }}</td>
           </ng-container>
           <ng-container matColumnDef="createdAt">
-            <th mat-header-cell *matHeaderCellDef>Creada</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Creada</th>
             <td mat-cell *matCellDef="let n">{{ n.createdAt | date:'shortDate' }}</td>
           </ng-container>
           <ng-container matColumnDef="actions">
@@ -183,12 +188,15 @@ interface NovelsResponse {
 export class NovelsComponent implements OnInit {
   private readonly api = inject(HttpApiService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   loading = signal(true);
   novels = signal<Novel[]>([]);
   pagination = signal<Pagination>({ page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false });
   search = signal('');
   statusFilter = signal('ALL');
+  sortField = signal('');
+  sortDirection = signal<'asc' | 'desc' | ''>('');
   statusOptions = ['ALL', 'DRAFT', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'HIATUS'];
   novelStatuses = ['DRAFT', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED', 'HIATUS'];
   columns = ['title', 'author', 'status', 'rating', 'chaptersCount', 'views', 'kudos', 'createdAt', 'actions'];
@@ -207,6 +215,10 @@ export class NovelsComponent implements OnInit {
     };
     if (this.search()) params['search'] = this.search();
     if (this.statusFilter() !== 'ALL') params['status'] = this.statusFilter();
+    if (this.sortField() && this.sortDirection()) {
+      params['sort'] = this.sortField();
+      params['order'] = this.sortDirection();
+    }
 
     this.api.get<NovelsResponse>('/admin/novels', params).subscribe((res) => {
       this.novels.set(res.data);
@@ -230,6 +242,12 @@ export class NovelsComponent implements OnInit {
     this.load(event.pageIndex + 1, event.pageSize);
   }
 
+  onSort(sort: Sort) {
+    this.sortField.set(sort.active);
+    this.sortDirection.set(sort.direction);
+    this.load(1, this.pagination().limit);
+  }
+
   statusIcon(status: string): string {
     const icons: Record<string, string> = {
       DRAFT: 'edit_note',
@@ -246,14 +264,24 @@ export class NovelsComponent implements OnInit {
   }
 
   changeStatus(novel: Novel, status: string) {
-    if (!confirm(`Cambiar estado de "${novel.title}" a ${status}?`)) return;
-    this.api.patch(`/admin/novels/${novel.id}`, { status }).subscribe({
-      next: () => {
-        this.snackBar.open(`"${novel.title}": estado cambiado a ${status}`, 'OK', { duration: 2000 });
-        this.load(this.pagination().page, this.pagination().limit);
-      },
-      error: () => this.snackBar.open('Error al cambiar estado', 'OK', { duration: 3000 }),
-    });
+    this.dialog
+      .open<ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult>(ConfirmDialogComponent, {
+        data: {
+          title: 'Cambiar estado',
+          message: `Cambiar estado de "${novel.title}" a ${status}?`,
+        },
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (!result?.confirmed) return;
+        this.api.patch(`/admin/novels/${novel.id}`, { status }).subscribe({
+          next: () => {
+            this.snackBar.open(`"${novel.title}": estado cambiado a ${status}`, 'OK', { duration: 2000 });
+            this.load(this.pagination().page, this.pagination().limit);
+          },
+          error: () => this.snackBar.open('Error al cambiar estado', 'OK', { duration: 3000 }),
+        });
+      });
   }
 
   toggleVisibility(novel: Novel) {
@@ -267,13 +295,25 @@ export class NovelsComponent implements OnInit {
   }
 
   deleteNovel(novel: Novel) {
-    if (!confirm(`Seguro que quieres eliminar "${novel.title}"? Esta accion no se puede deshacer.`)) return;
-    this.api.delete(`/admin/novels/${novel.id}`).subscribe({
-      next: () => {
-        this.snackBar.open(`"${novel.title}" eliminada`, 'OK', { duration: 2000 });
-        this.load(this.pagination().page, this.pagination().limit);
-      },
-      error: () => this.snackBar.open('Error al eliminar novela', 'OK', { duration: 3000 }),
-    });
+    this.dialog
+      .open<ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult>(ConfirmDialogComponent, {
+        data: {
+          title: 'Eliminar novela',
+          message: `Seguro que quieres eliminar "${novel.title}"? Esta accion no se puede deshacer.`,
+          color: 'warn',
+          confirmLabel: 'Eliminar',
+        },
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (!result?.confirmed) return;
+        this.api.delete(`/admin/novels/${novel.id}`).subscribe({
+          next: () => {
+            this.snackBar.open(`"${novel.title}" eliminada`, 'OK', { duration: 2000 });
+            this.load(this.pagination().page, this.pagination().limit);
+          },
+          error: () => this.snackBar.open('Error al eliminar novela', 'OK', { duration: 3000 }),
+        });
+      });
   }
 }

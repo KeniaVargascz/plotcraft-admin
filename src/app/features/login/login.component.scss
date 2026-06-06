@@ -1,0 +1,276 @@
+.login-shell .mat-mdc-form-field {
+  --mdc-outlined-text-field-outline-color: rgba(255, 255, 255, 0.15);
+  --mdc-outlined-text-field-hover-outline-color: rgba(255, 255, 255, 0.3);
+  --mdc-outlined-text-field-focus-outline-color: #c9a84c;
+  --mdc-outlined-text-field-label-text-color: rgba(255, 255, 255, 0.55);
+  --mdc-outlined-text-field-focus-label-text-color: #c9a84c;
+  --mdc-outlined-text-field-input-text-color: #e8e8f0;
+  --mdc-outlined-text-field-caret-color: #c9a84c;
+  --mdc-outlined-text-field-disabled-input-text-color: rgba(255, 255, 255, 0.35);
+  --mdc-outlined-text-field-disabled-label-text-color: rgba(255, 255, 255, 0.3);
+  --mdc-outlined-text-field-container-shape: 0.75rem;
+}
+
+.login-shell .mat-mdc-select {
+  --mat-select-enabled-trigger-text-color: #e8e8f0;
+  --mat-select-trigger-text-color: #e8e8f0;
+  --mat-select-placeholder-text-color: rgba(255, 255, 255, 0.55);
+  --mat-select-enabled-arrow-color: rgba(255, 255, 255, 0.55);
+  --mat-select-focused-arrow-color: #c9a84c;
+}
+
+.login-shell .mat-mdc-select-value-text {
+  color: #e8e8f0 !important;
+}
+
+.login-shell .mat-mdc-select-trigger .mat-mdc-select-value {
+  color: #e8e8f0 !important;
+}
+
+.login-shell .mat-mdc-icon-button {
+  --mdc-icon-button-icon-color: rgba(255, 255, 255, 0.55);
+}
+
+.login-shell .mdc-floating-label {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.login-shell .mdc-text-field--focused .mdc-floating-label {
+  color: #c9a84c !important;
+}
+
+.login-shell .mdc-notched-outline__leading,
+.login-shell .mdc-notched-outline__notch,
+.login-shell .mdc-notched-outline__trailing {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.login-shell .mdc-notched-outline__leading {
+  border-radius: 0.75rem 0 0 0.75rem !important;
+  width: 0.75rem !important;
+}
+
+.login-shell .mdc-notched-outline__trailing {
+  border-radius: 0 0.75rem 0.75rem 0 !important;
+}
+
+.login-shell .mdc-notched-outline__notch {
+  border-left: none !important;
+}
+
+.login-shell .mdc-text-field--focused .mdc-notched-outline__leading,
+.login-shell .mdc-text-field--focused .mdc-notched-outline__notch,
+.login-shell .mdc-text-field--focused .mdc-notched-outline__trailing {
+  border-color: #c9a84c !important;
+}
+
+.login-shell .mat-mdc-input-element {
+  color: #e8e8f0 !important;
+}
+
+.login-shell input:-webkit-autofill,
+.login-shell input:-webkit-autofill:hover,
+.login-shell input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e8e8f0 !important;
+  -webkit-box-shadow: 0 0 0 1000px #1a1a2e inset !important;
+  box-shadow: 0 0 0 1000px #1a1a2e inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--login-bg);
+  padding: 1rem;
+}
+
+.login-card {
+  width: min(460px, 92vw);
+  padding: 2.5rem 2rem;
+  border-radius: 1.25rem;
+  background: var(--login-surface);
+  border: 1px solid var(--login-border);
+  overflow: hidden;
+}
+
+.logo {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--admin-accent);
+  margin-bottom: 0.25rem;
+}
+
+.logo-sub {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--login-text-secondary);
+  margin-bottom: 2rem;
+  letter-spacing: 0.03em;
+}
+
+.form-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.error-msg {
+  color: #ef5350;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  background: rgba(239, 83, 80, 0.08);
+  border-radius: 0.5rem;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.submit-btn {
+  width: 100%;
+  height: 46px;
+  background: var(--admin-accent) !important;
+  color: var(--login-surface) !important;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: 0.75rem;
+  letter-spacing: 0.02em;
+  transition: background 0.15s;
+
+  &:hover:not([disabled]) {
+    background: var(--admin-accent-hover) !important;
+  }
+}
+
+.info-text {
+  text-align: center;
+  color: var(--login-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.back-link {
+  text-align: center;
+  margin-top: 1rem;
+
+  a {
+    color: var(--login-text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.15s;
+
+    &:hover {
+      color: var(--login-text);
+    }
+  }
+}
+
+.forgot-link {
+  text-align: center;
+  margin-top: 0.75rem;
+
+  a {
+    color: var(--admin-accent);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.channel-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.channel-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--login-border);
+  background: transparent;
+  color: var(--login-text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--login-border-hover);
+    color: var(--login-text);
+  }
+
+  &.active {
+    border-color: var(--admin-accent);
+    color: var(--admin-accent);
+    background: var(--admin-accent-bg);
+  }
+}
+
+.success-msg {
+  color: #66bb6a;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  background: rgba(102, 187, 106, 0.08);
+  border-radius: 0.5rem;
+}
+
+.phone-row {
+  display: flex;
+  gap: 0.5rem;
+
+  .country-code {
+    width: 145px;
+    flex-shrink: 0;
+  }
+
+  .local-number {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--admin-accent);
+  background: var(--admin-accent-bg);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  margin: 0 auto 1rem;
+  width: fit-content;
+}
+
+.resend-link {
+  text-align: center;
+  margin-top: 0.5rem;
+
+  a {
+    color: var(--admin-accent);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &.disabled {
+      color: var(--login-text-secondary);
+      pointer-events: none;
+    }
+  }
+}

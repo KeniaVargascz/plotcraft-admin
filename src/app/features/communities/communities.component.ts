@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,7 +15,9 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatCardModule } from '@angular/material/card';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { HttpApiService } from '../../core/services/http-api.service';
+import { ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult } from '../../shared/confirm-dialog.component';
 
 interface Community {
   id: string;
@@ -47,10 +50,11 @@ interface CommunitiesResponse {
   imports: [
     DatePipe, FormsModule,
     MatTableModule, MatPaginatorModule, MatProgressSpinnerModule,
+    MatSortModule,
     MatChipsModule, MatIconModule, MatButtonModule,
     MatInputModule, MatFormFieldModule, MatMenuModule,
     MatTabsModule, MatCardModule, MatBadgeModule,
-    MatSnackBarModule,
+    MatSnackBarModule, MatDialogModule,
   ],
   styles: [`
     h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #1a1a2e; }
@@ -174,17 +178,17 @@ interface CommunitiesResponse {
           <div class="loading"><mat-spinner /></div>
         } @else {
           <div class="table-container">
-            <table mat-table [dataSource]="communities()">
+            <table mat-table [dataSource]="communities()" matSort (matSortChange)="onSort($event)">
               <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre</th>
                 <td mat-cell *matCellDef="let c">{{ c.name }}</td>
               </ng-container>
               <ng-container matColumnDef="type">
-                <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Tipo</th>
                 <td mat-cell *matCellDef="let c">{{ c.type }}</td>
               </ng-container>
               <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef>Estado</th>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
                 <td mat-cell *matCellDef="let c">
                   <mat-chip class="chip-status">{{ c.status }}</mat-chip>
                 </td>
@@ -194,11 +198,11 @@ interface CommunitiesResponse {
                 <td mat-cell *matCellDef="let c">{{ c.owner.username }}</td>
               </ng-container>
               <ng-container matColumnDef="membersCount">
-                <th mat-header-cell *matHeaderCellDef>Miembros</th>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Miembros</th>
                 <td mat-cell *matCellDef="let c">{{ c.membersCount }}</td>
               </ng-container>
               <ng-container matColumnDef="createdAt">
-                <th mat-header-cell *matHeaderCellDef>Creada</th>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Creada</th>
                 <td mat-cell *matCellDef="let c">{{ c.createdAt | date:'shortDate' }}</td>
               </ng-container>
               <ng-container matColumnDef="actions">
@@ -248,6 +252,7 @@ interface CommunitiesResponse {
 export class CommunitiesComponent implements OnInit {
   private readonly api = inject(HttpApiService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   // Pending tab
   loadingPending = signal(true);
@@ -262,6 +267,8 @@ export class CommunitiesComponent implements OnInit {
   pagination = signal({ page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false });
   search = signal('');
   statusFilter = signal('ALL');
+  sortField = signal('');
+  sortDirection = signal<'asc' | 'desc' | ''>('');
   statusOptions = ['ALL', 'PENDING', 'ACTIVE', 'REJECTED', 'SUSPENDED'];
   columns = ['name', 'type', 'status', 'owner', 'membersCount', 'createdAt', 'actions'];
 
@@ -303,6 +310,10 @@ export class CommunitiesComponent implements OnInit {
     };
     if (this.search()) params['search'] = this.search();
     if (this.statusFilter() !== 'ALL') params['status'] = this.statusFilter();
+    if (this.sortField() && this.sortDirection()) {
+      params['sort'] = this.sortField();
+      params['order'] = this.sortDirection();
+    }
 
     this.api.get<CommunitiesResponse>('/admin/communities', params).subscribe((res) => {
       this.communities.set(res.data);
@@ -324,6 +335,12 @@ export class CommunitiesComponent implements OnInit {
 
   onPage(event: PageEvent) {
     this.loadAll(event.pageIndex + 1, event.pageSize);
+  }
+
+  onSort(sort: Sort) {
+    this.sortField.set(sort.active);
+    this.sortDirection.set(sort.direction);
+    this.loadAll(1, this.pagination().limit);
   }
 
   approve(c: Community) {
@@ -360,26 +377,47 @@ export class CommunitiesComponent implements OnInit {
   }
 
   rejectFromTable(c: Community) {
-    const reason = prompt('Razon del rechazo:');
-    if (!reason?.trim()) return;
-    this.api.post(`/admin/communities/${c.id}/reject`, { reason }).subscribe({
-      next: () => {
-        this.snackBar.open(`"${c.name}" rechazada`, 'OK', { duration: 2000 });
-        this.loadAll(this.pagination().page, this.pagination().limit);
-        this.loadPendingCount();
-      },
-      error: () => this.snackBar.open('Error al rechazar', 'OK', { duration: 3000 }),
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Rechazar comunidad',
+        message: `Seguro que quieres rechazar "${c.name}"?`,
+        confirmLabel: 'Rechazar',
+        color: 'warn',
+        promptLabel: 'Razon del rechazo',
+        promptRequired: true,
+      } as ConfirmDialogData,
+    });
+    ref.afterClosed().subscribe((result?: ConfirmDialogResult) => {
+      if (!result?.confirmed || !result.reason?.trim()) return;
+      this.api.post(`/admin/communities/${c.id}/reject`, { reason: result.reason }).subscribe({
+        next: () => {
+          this.snackBar.open(`"${c.name}" rechazada`, 'OK', { duration: 2000 });
+          this.loadAll(this.pagination().page, this.pagination().limit);
+          this.loadPendingCount();
+        },
+        error: () => this.snackBar.open('Error al rechazar', 'OK', { duration: 3000 }),
+      });
     });
   }
 
   suspend(c: Community) {
-    if (!confirm(`Seguro que quieres suspender "${c.name}"?`)) return;
-    this.api.patch(`/admin/communities/${c.id}/suspend`).subscribe({
-      next: () => {
-        this.snackBar.open(`"${c.name}" suspendida`, 'OK', { duration: 2000 });
-        this.loadAll(this.pagination().page, this.pagination().limit);
-      },
-      error: () => this.snackBar.open('Error al suspender', 'OK', { duration: 3000 }),
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Suspender comunidad',
+        message: `Seguro que quieres suspender "${c.name}"?`,
+        confirmLabel: 'Suspender',
+        color: 'warn',
+      } as ConfirmDialogData,
+    });
+    ref.afterClosed().subscribe((result?: ConfirmDialogResult) => {
+      if (!result?.confirmed) return;
+      this.api.patch(`/admin/communities/${c.id}/suspend`).subscribe({
+        next: () => {
+          this.snackBar.open(`"${c.name}" suspendida`, 'OK', { duration: 2000 });
+          this.loadAll(this.pagination().page, this.pagination().limit);
+        },
+        error: () => this.snackBar.open('Error al suspender', 'OK', { duration: 3000 }),
+      });
     });
   }
 

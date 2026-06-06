@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,6 +15,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { HttpApiService } from '../../core/services/http-api.service';
 import { UserDetailDialogComponent } from './user-detail-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult } from '../../shared/confirm-dialog.component';
 
 interface User {
   id: string;
@@ -48,6 +50,7 @@ interface UsersResponse {
   imports: [
     DatePipe, FormsModule,
     MatTableModule, MatPaginatorModule, MatProgressSpinnerModule,
+    MatSortModule,
     MatChipsModule, MatIconModule, MatButtonModule,
     MatInputModule, MatFormFieldModule, MatMenuModule,
     MatSnackBarModule, MatDialogModule,
@@ -127,7 +130,7 @@ interface UsersResponse {
       <div class="loading"><mat-spinner /></div>
     } @else {
       <div class="table-container">
-        <table mat-table [dataSource]="users()">
+        <table mat-table [dataSource]="users()" matSort (matSortChange)="onSort($event)">
           <ng-container matColumnDef="avatar">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let user">
@@ -139,29 +142,29 @@ interface UsersResponse {
             </td>
           </ng-container>
           <ng-container matColumnDef="username">
-            <th mat-header-cell *matHeaderCellDef>Usuario</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Usuario</th>
             <td mat-cell *matCellDef="let user">{{ user.username }}</td>
           </ng-container>
           <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef>Email</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Email</th>
             <td mat-cell *matCellDef="let user">{{ user.email }}</td>
           </ng-container>
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
             <td mat-cell *matCellDef="let user">
               <mat-chip class="chip-status">{{ user.status }}</mat-chip>
             </td>
           </ng-container>
           <ng-container matColumnDef="role">
-            <th mat-header-cell *matHeaderCellDef>Rol</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Rol</th>
             <td mat-cell *matCellDef="let user">{{ user.role }}</td>
           </ng-container>
           <ng-container matColumnDef="novelsCount">
-            <th mat-header-cell *matHeaderCellDef>Novelas</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Novelas</th>
             <td mat-cell *matCellDef="let user">{{ user.novelsCount }}</td>
           </ng-container>
           <ng-container matColumnDef="createdAt">
-            <th mat-header-cell *matHeaderCellDef>Registro</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Registro</th>
             <td mat-cell *matCellDef="let user">{{ user.createdAt | date:'shortDate' }}</td>
           </ng-container>
           <ng-container matColumnDef="actions">
@@ -225,6 +228,8 @@ export class UsersComponent implements OnInit {
   pagination = signal<Pagination>({ page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false });
   search = signal('');
   statusFilter = signal('ALL');
+  sortField = signal('');
+  sortDirection = signal<'asc' | 'desc' | ''>('');
   statusOptions = ['ALL', 'ACTIVE', 'SUSPENDED', 'BANNED'];
   columns = ['avatar', 'username', 'email', 'status', 'role', 'novelsCount', 'createdAt', 'actions'];
 
@@ -242,6 +247,10 @@ export class UsersComponent implements OnInit {
     };
     if (this.search()) params['search'] = this.search();
     if (this.statusFilter() !== 'ALL') params['status'] = this.statusFilter();
+    if (this.sortField() && this.sortDirection()) {
+      params['sort'] = this.sortField();
+      params['order'] = this.sortDirection();
+    }
 
     this.api.get<UsersResponse>('/admin/users', params).subscribe((res) => {
       this.users.set(res.data);
@@ -265,6 +274,12 @@ export class UsersComponent implements OnInit {
     this.load(event.pageIndex + 1, event.pageSize);
   }
 
+  onSort(sort: Sort) {
+    this.sortField.set(sort.active);
+    this.sortDirection.set(sort.direction);
+    this.load(1, this.pagination().limit);
+  }
+
   viewDetail(user: User) {
     const ref = this.dialog.open(UserDetailDialogComponent, {
       width: '560px',
@@ -276,12 +291,27 @@ export class UsersComponent implements OnInit {
   }
 
   changeStatus(user: User, status: string) {
-    if (status === 'BANNED' || status === 'SUSPENDED') {
-      if (!confirm(`Seguro que quieres cambiar el estado de ${user.username} a ${status}?`)) return;
+    const needsConfirm = status === 'BANNED' || status === 'SUSPENDED';
+    if (needsConfirm) {
+      const ref = this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: 'Cambiar estado',
+          message: `Seguro que quieres cambiar el estado de ${user.username} a ${status}?`,
+          confirmLabel: 'Cambiar',
+          color: 'warn',
+          promptLabel: 'Razon (opcional)',
+        } as ConfirmDialogData,
+      });
+      ref.afterClosed().subscribe((result: ConfirmDialogResult) => {
+        if (!result?.confirmed) return;
+        this._doChangeStatus(user, status, result.reason ?? '');
+      });
+    } else {
+      this._doChangeStatus(user, status, '');
     }
-    const reason = (status === 'BANNED' || status === 'SUSPENDED')
-      ? prompt('Razon (opcional):') ?? ''
-      : '';
+  }
+
+  private _doChangeStatus(user: User, status: string, reason: string) {
     this.actionLoading.set(user.id);
     this.api.patch(`/admin/users/${user.id}/status`, { status, reason }).subscribe({
       next: () => {
@@ -298,18 +328,27 @@ export class UsersComponent implements OnInit {
 
   toggleAdmin(user: User) {
     const action = user.role === 'ADMIN' ? 'quitar permisos de admin a' : 'dar permisos de admin a';
-    if (!confirm(`Seguro que quieres ${action} ${user.username}?`)) return;
-    this.actionLoading.set(user.id);
-    this.api.patch(`/admin/users/${user.id}/admin`, {}).subscribe({
-      next: () => {
-        this.actionLoading.set(null);
-        this.snackBar.open(`${user.username}: rol actualizado`, 'OK', { duration: 2000 });
-        this.load(this.pagination().page, this.pagination().limit);
-      },
-      error: () => {
-        this.actionLoading.set(null);
-        this.snackBar.open('Error al cambiar rol', 'OK', { duration: 3000 });
-      },
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Permisos de admin',
+        message: `Seguro que quieres ${action} ${user.username}?`,
+        confirmLabel: 'Confirmar',
+      } as ConfirmDialogData,
+    });
+    ref.afterClosed().subscribe((result: ConfirmDialogResult) => {
+      if (!result?.confirmed) return;
+      this.actionLoading.set(user.id);
+      this.api.patch(`/admin/users/${user.id}/admin`, {}).subscribe({
+        next: () => {
+          this.actionLoading.set(null);
+          this.snackBar.open(`${user.username}: rol actualizado`, 'OK', { duration: 2000 });
+          this.load(this.pagination().page, this.pagination().limit);
+        },
+        error: () => {
+          this.actionLoading.set(null);
+          this.snackBar.open('Error al cambiar rol', 'OK', { duration: 3000 });
+        },
+      });
     });
   }
 }

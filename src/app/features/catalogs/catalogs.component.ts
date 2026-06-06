@@ -8,7 +8,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { HttpApiService } from '../../core/services/http-api.service';
+import { ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult } from '../../shared/confirm-dialog.component';
 
 interface CatalogItem {
   id: string;
@@ -24,7 +26,7 @@ interface CatalogItem {
     FormsModule,
     MatTabsModule, MatIconModule, MatButtonModule,
     MatInputModule, MatFormFieldModule, MatSlideToggleModule,
-    MatProgressSpinnerModule, MatSnackBarModule,
+    MatProgressSpinnerModule, MatSnackBarModule, MatDialogModule,
   ],
   styles: [`
     h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #1a1a2e; }
@@ -132,6 +134,7 @@ interface CatalogItem {
 export class CatalogsComponent implements OnInit {
   private readonly api = inject(HttpApiService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   tabs = [
     { key: 'genres', label: 'Generos' },
@@ -239,13 +242,23 @@ export class CatalogsComponent implements OnInit {
   }
 
   deleteItem(catalog: string, item: CatalogItem) {
-    if (!confirm(`Seguro que quieres eliminar "${item.label}"?`)) return;
-    this.api.delete(`/admin/catalogs/${catalog}/${item.id}`).subscribe({
-      next: () => {
-        this.snackBar.open(`"${item.label}" eliminado`, 'OK', { duration: 2000 });
-        this.loadItems(catalog);
-      },
-      error: () => this.snackBar.open('Error al eliminar', 'OK', { duration: 3000 }),
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Eliminar elemento',
+        message: `Seguro que quieres eliminar "${item.label}"?`,
+        confirmLabel: 'Eliminar',
+        color: 'warn',
+      } as ConfirmDialogData,
+    });
+    ref.afterClosed().subscribe((result?: ConfirmDialogResult) => {
+      if (!result?.confirmed) return;
+      this.api.delete(`/admin/catalogs/${catalog}/${item.id}`).subscribe({
+        next: () => {
+          this.snackBar.open(`"${item.label}" eliminado`, 'OK', { duration: 2000 });
+          this.loadItems(catalog);
+        },
+        error: () => this.snackBar.open('Error al eliminar', 'OK', { duration: 3000 }),
+      });
     });
   }
 }

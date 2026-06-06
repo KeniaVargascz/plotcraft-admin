@@ -11,7 +11,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { HttpApiService } from '../../core/services/http-api.service';
+import { ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult } from '../../shared/confirm-dialog.component';
 
 interface Post {
   id: string;
@@ -47,7 +49,7 @@ interface PostsResponse {
     MatTableModule, MatPaginatorModule, MatProgressSpinnerModule,
     MatChipsModule, MatIconModule, MatButtonModule,
     MatInputModule, MatFormFieldModule, MatMenuModule,
-    MatSnackBarModule,
+    MatSnackBarModule, MatDialogModule,
   ],
   styles: [`
     h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #1a1a2e; }
@@ -168,6 +170,7 @@ interface PostsResponse {
 export class PostsComponent implements OnInit {
   private readonly api = inject(HttpApiService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   loading = signal(true);
   posts = signal<Post[]>([]);
@@ -215,13 +218,23 @@ export class PostsComponent implements OnInit {
   }
 
   deletePost(post: Post) {
-    if (!confirm(`Seguro que quieres eliminar este post de ${post.author.username}? Esta accion no se puede deshacer.`)) return;
-    this.api.delete(`/admin/posts/${post.id}`).subscribe({
-      next: () => {
-        this.snackBar.open('Post eliminado', 'OK', { duration: 2000 });
-        this.load(this.pagination().page, this.pagination().limit);
-      },
-      error: () => this.snackBar.open('Error al eliminar post', 'OK', { duration: 3000 }),
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Eliminar post',
+        message: `Seguro que quieres eliminar este post de ${post.author.username}? Esta accion no se puede deshacer.`,
+        confirmLabel: 'Eliminar',
+        color: 'warn',
+      } as ConfirmDialogData,
+    });
+    ref.afterClosed().subscribe((result?: ConfirmDialogResult) => {
+      if (!result?.confirmed) return;
+      this.api.delete(`/admin/posts/${post.id}`).subscribe({
+        next: () => {
+          this.snackBar.open('Post eliminado', 'OK', { duration: 2000 });
+          this.load(this.pagination().page, this.pagination().limit);
+        },
+        error: () => this.snackBar.open('Error al eliminar post', 'OK', { duration: 3000 }),
+      });
     });
   }
 }

@@ -11,7 +11,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { HttpApiService } from '../../core/services/http-api.service';
+import { ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult } from '../../shared/confirm-dialog.component';
 
 interface ForumThread {
   id: string;
@@ -50,7 +52,7 @@ interface ThreadsResponse {
     MatTableModule, MatPaginatorModule, MatProgressSpinnerModule,
     MatChipsModule, MatIconModule, MatButtonModule,
     MatInputModule, MatFormFieldModule, MatMenuModule,
-    MatSnackBarModule,
+    MatSnackBarModule, MatDialogModule,
   ],
   styles: [`
     h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #1a1a2e; }
@@ -186,6 +188,7 @@ interface ThreadsResponse {
 export class ForumComponent implements OnInit {
   private readonly api = inject(HttpApiService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   loading = signal(true);
   threads = signal<ForumThread[]>([]);
@@ -243,24 +246,43 @@ export class ForumComponent implements OnInit {
   }
 
   closeThread(thread: ForumThread) {
-    if (!confirm(`Seguro que quieres cerrar "${thread.title}"?`)) return;
-    this.api.patch(`/admin/forum/threads/${thread.id}/close`).subscribe({
-      next: () => {
-        this.snackBar.open(`"${thread.title}" cerrado`, 'OK', { duration: 2000 });
-        this.load(this.pagination().page, this.pagination().limit);
-      },
-      error: () => this.snackBar.open('Error al cerrar hilo', 'OK', { duration: 3000 }),
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Cerrar hilo',
+        message: `Seguro que quieres cerrar "${thread.title}"?`,
+        confirmLabel: 'Cerrar',
+      } as ConfirmDialogData,
+    });
+    ref.afterClosed().subscribe((result?: ConfirmDialogResult) => {
+      if (!result?.confirmed) return;
+      this.api.patch(`/admin/forum/threads/${thread.id}/close`).subscribe({
+        next: () => {
+          this.snackBar.open(`"${thread.title}" cerrado`, 'OK', { duration: 2000 });
+          this.load(this.pagination().page, this.pagination().limit);
+        },
+        error: () => this.snackBar.open('Error al cerrar hilo', 'OK', { duration: 3000 }),
+      });
     });
   }
 
   deleteThread(thread: ForumThread) {
-    if (!confirm(`Seguro que quieres eliminar "${thread.title}"? Esta accion no se puede deshacer.`)) return;
-    this.api.delete(`/admin/forum/threads/${thread.id}`).subscribe({
-      next: () => {
-        this.snackBar.open(`"${thread.title}" eliminado`, 'OK', { duration: 2000 });
-        this.load(this.pagination().page, this.pagination().limit);
-      },
-      error: () => this.snackBar.open('Error al eliminar hilo', 'OK', { duration: 3000 }),
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Eliminar hilo',
+        message: `Seguro que quieres eliminar "${thread.title}"? Esta accion no se puede deshacer.`,
+        confirmLabel: 'Eliminar',
+        color: 'warn',
+      } as ConfirmDialogData,
+    });
+    ref.afterClosed().subscribe((result?: ConfirmDialogResult) => {
+      if (!result?.confirmed) return;
+      this.api.delete(`/admin/forum/threads/${thread.id}`).subscribe({
+        next: () => {
+          this.snackBar.open(`"${thread.title}" eliminado`, 'OK', { duration: 2000 });
+          this.load(this.pagination().page, this.pagination().limit);
+        },
+        error: () => this.snackBar.open('Error al eliminar hilo', 'OK', { duration: 3000 }),
+      });
     });
   }
 }

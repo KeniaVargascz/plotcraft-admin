@@ -1,12 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { HttpApiService } from '../../core/services/http-api.service';
+import { ConfirmDialogComponent, ConfirmDialogData, ConfirmDialogResult } from '../../shared/confirm-dialog.component';
 import { signal } from '@angular/core';
 
 interface UserDetail {
@@ -192,6 +193,7 @@ interface UserDetail {
 export class UserDetailDialogComponent {
   private readonly api = inject(HttpApiService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   private readonly dialogRef = inject(MatDialogRef<UserDetailDialogComponent>);
   private readonly data: { userId: string } = inject(MAT_DIALOG_DATA);
 
@@ -213,9 +215,28 @@ export class UserDetailDialogComponent {
   }
 
   changeStatus(status: string) {
-    const reason = status === 'BANNED' || status === 'SUSPENDED'
-      ? prompt('Razon (opcional):') ?? ''
-      : '';
+    const needsReason = status === 'BANNED' || status === 'SUSPENDED';
+    if (needsReason) {
+      const statusLabel = status === 'BANNED' ? 'Banear' : 'Suspender';
+      const ref = this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: `${statusLabel} usuario`,
+          message: `Seguro que quieres ${statusLabel.toLowerCase()} a "${this.user()?.username}"?`,
+          confirmLabel: statusLabel,
+          color: 'warn',
+          promptLabel: 'Razon (opcional)',
+        } as ConfirmDialogData,
+      });
+      ref.afterClosed().subscribe((result?: ConfirmDialogResult) => {
+        if (!result?.confirmed) return;
+        this.applyStatusChange(status, result.reason ?? '');
+      });
+    } else {
+      this.applyStatusChange(status, '');
+    }
+  }
+
+  private applyStatusChange(status: string, reason: string) {
     this.actionLoading.set(status);
     this.api.patch(`/admin/users/${this.data.userId}/status`, { status, reason }).subscribe({
       next: () => {
